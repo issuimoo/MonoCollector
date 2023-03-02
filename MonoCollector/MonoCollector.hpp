@@ -9,6 +9,9 @@
 #include <basetsd.h>
 #include <stdint.h>
 #include <vector>
+#include <string>
+#include <locale>
+#include <codecvt>
 
 #define MONO_DATACOLLECTORVERSION 20221207 
 
@@ -221,6 +224,8 @@ typedef void* (__cdecl* IL2CPP_METHOD_GET_RETURN_TYPE)(void* method);
 typedef void* (__cdecl* IL2CPP_CLASS_FROM_TYPE)(void* type);
 typedef wchar_t* (__cdecl* IL2CPP_STRING_CHARS)(void* stringobject);
 
+
+
 class MonoCollector
 {
 public:
@@ -228,13 +233,50 @@ public:
 	MonoCollector();
 	~MonoCollector();
 
+	/*
+	是否il2cpp
+	*/
 	friend bool Isil2cpp(MonoCollector* _this);
 
+	/*
+	枚举组件
+	ret: 组件数量
+	1. 返回
+	*/
 	size_t EnumAssemblies(std::vector<UINT64>& ret);
+	
+	/*
+	枚举域名
+	ret: 数量
+	1. 返回
+	*/
+	size_t EnumDomains(std::vector<UINT64>& ret);
+
+	/*
+	从程序集Image
+	*/
+	UINT_PTR GetImageFromAssembly(void* Assembly);
+
+	bool Object_GetClass(void* object, UINT64& r_klass, std::string& classname_p);
+
+	int SetCurrentDomain(void* domain);
+
+	void GetImageName(void* image, std::string& s);
+
+	void GetImageFileName(void* image, std::string& s);
+
+	bool EnumClassesInImage(void* image, std::vector<UINT_PTR>& ret_ptr, std::vector<std::string>& ret_string_class, std::vector<std::string>& ret_string_namespace);
+
+	void EnumFieldsInClass(void* c, void*& field, void*& fieldtype, int& type, UINT_PTR& field_parent, DWORD& field_offset, int& field_flags, std::vector<std::string>& Names, std::vector<std::string>& Types);
+
 
 private:
 
 	void* mono_selfthread;
+
+	void* domain;
+
+	bool il2cpp = false;
 
 	G_FREE g_free;
 	MONO_GET_ROOT_DOMAIN mono_get_root_domain;
@@ -369,8 +411,4 @@ private:
 	IL2CPP_METHOD_GET_RETURN_TYPE il2cpp_method_get_return_type;
 	IL2CPP_CLASS_FROM_TYPE il2cpp_class_from_type;
 	IL2CPP_STRING_CHARS il2cpp_string_chars;
-
-	void* domain;
-
-	bool il2cpp = false;
 };

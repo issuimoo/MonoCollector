@@ -1,5 +1,11 @@
 #include "MonoCollector.hpp"
 
+WORD UTF8TOUTF16(char* szUtf8) {
+	std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+	std::u16string dest = convert.from_bytes(szUtf8);
+	return *(WORD*)&dest[0];
+}
+
 bool Isil2cpp(MonoCollector* _this)
 {
 	return _this->il2cpp;
@@ -13,6 +19,249 @@ void __cdecl customfreeimplementation(PVOID address)
 void _cdecl AssemblyEnumerator(void* domain, std::vector<UINT64>* v)
 {
 	v->push_back((UINT_PTR)domain);
+}
+
+void _cdecl DomainEnumerator(void* domain, std::vector<UINT64>* v)
+{
+	v->push_back((UINT_PTR)domain);
+}
+
+void MonoCollector::EnumFieldsInClass(void* c, void*& field, void*& fieldtype,int& type, UINT_PTR& field_parent, DWORD& field_offset, int& field_flags,std::vector<std::string>& Names, std::vector<std::string>& Types)
+{
+	void* iter = NULL;
+
+	do
+	{
+		field = mono_class_get_fields(c, &iter);
+
+		if (field)
+		{
+			fieldtype = mono_field_get_type(field);
+			type = mono_type_get_type(fieldtype);
+			field_parent = (UINT_PTR)mono_field_get_parent(field);
+			field_offset = (DWORD)mono_field_get_offset(field);
+			field_flags = mono_field_get_flags(field);
+
+
+
+			char* name = mono_field_get_name(field);
+			char* type = mono_type_get_name(fieldtype);
+			std::string sName = std::string(name);
+			std::string sType = std::string(type);
+			//check if name is x ...
+
+			if ((BYTE)name[0] == 0xEE) {
+				char szUeName[32];
+				sprintf_s(szUeName, 32, "\\u%04X", UTF8TOUTF16(name));
+				sName = szUeName;
+			}
+			if ((BYTE)type[0] == 0xEE) {
+				char szUeName[32];
+				sprintf_s(szUeName, 32, "\\u%04X", UTF8TOUTF16(type));
+				sType = szUeName;
+			}
+
+			Names.push_back(sName);
+
+			if (type)
+			{
+				Types.push_back(sType);
+			}
+			else
+				Types.push_back("");
+
+		}
+	} while (field);
+}
+
+bool MonoCollector::EnumClassesInImage(void* image,std::vector<UINT_PTR>& ret_ptr, std::vector<std::string>& ret_string_class, std::vector<std::string>& ret_string_namespace)
+{
+	int i;
+
+	ret_ptr.clear();
+	ret_string_class.clear();
+	ret_string_namespace.clear();
+
+	if (image == NULL)
+	{
+		return false;
+	}
+
+	if (il2cpp)
+	{
+		int count = 0;
+		if (il2cpp_image_get_class_count)
+		{
+			count = il2cpp_image_get_class_count(image);
+		}
+
+		ret_ptr.reserve(count);
+		ret_string_class.reserve(count);
+		ret_string_namespace.reserve(count);
+
+		for (i = 0; i < count; i++)
+		{
+			if (il2cpp_image_get_class)
+			{
+				void* c = il2cpp_image_get_class(image, i);
+				ret_ptr.push_back((UINT_PTR)c);
+
+				if (c)
+				{
+					std::string name = mono_class_get_name(c);
+					ret_string_class.push_back(name);
+
+					name = mono_class_get_namespace(c);
+					ret_string_namespace.push_back(name);
+				}
+				else
+				{
+					ret_string_class.push_back("");
+					ret_string_namespace.push_back("");
+				}
+			}
+			else
+			{
+				ret_string_class.push_back("");
+				ret_string_namespace.push_back("");
+				ret_ptr.push_back((UINT_PTR)0);
+			}
+		}
+	}
+	else
+	{
+
+		void* tdef = mono_image_get_table_info(image, MONO_TABLE_TYPEDEF);
+		if (tdef)
+		{
+			int tdefcount = mono_table_info_get_rows(tdef);
+			ret_ptr.clear();
+			ret_ptr.reserve(tdefcount);
+
+			for (i = 0; i < tdefcount; i++)
+			{
+				void* c = mono_class_get(image, MONO_TOKEN_TYPE_DEF | (i + 1));
+				if (c != NULL)
+				{
+					char* name = mono_class_get_name(c);
+
+					ret_ptr.push_back((UINT_PTR)c);
+
+
+					std::string sName = std::string(name);
+
+					if ((BYTE)name[0] == 0xEE) {
+						char szUeName[32];
+						sprintf_s(szUeName, 32, "\\u%04X", UTF8TOUTF16(name));
+						sName = szUeName;
+					}
+
+					if (c)
+					{
+						std::string s = sName;
+						ret_string_class.push_back(s);
+					}
+					else
+						ret_string_class.push_back("");
+
+					name = mono_class_get_namespace(c);
+					if (name)
+					{
+						std::string s = name;
+						ret_string_namespace.push_back(s);
+					}
+					else
+						ret_string_namespace.push_back("");
+				}
+				else
+				{
+					ret_string_class.push_back("");
+					ret_string_namespace.push_back("");
+					ret_ptr.push_back((UINT_PTR)0);
+				}
+			}
+		}
+		else
+		{
+			return false;
+		}
+	}
+}
+
+void MonoCollector::GetImageFileName(void* image, std::string& s)
+{
+	s = mono_image_get_filename(image);
+}
+
+void MonoCollector::GetImageName(void* image,std::string& s)
+{
+	s = mono_image_get_name(image);
+}
+
+int MonoCollector::SetCurrentDomain(void* domain)
+{
+	if (mono_domain_set)
+		return mono_domain_set(domain, FALSE);
+	else
+		return 0;
+}
+
+bool MonoCollector::Object_GetClass(void* object, UINT64& r_klass, std::string& classname_p)
+{
+	char* classname;
+	void* klass;
+
+	try
+	{
+		unsigned int i;
+
+		klass = mono_object_get_class(object);
+		classname = mono_class_get_name(klass);
+
+		//small test to see if the classname is readable
+		for (i = 0; i < strlen(classname); i++)
+		{
+			char x = classname[i];
+			if (x == '\0')
+				break;
+		}
+
+		if (klass != 0)
+		{
+			r_klass = (UINT64)klass;
+			classname_p = classname;
+		}
+		else
+		{
+			return false;
+		}
+
+
+	}
+	catch (...)
+	{
+		return false; //failure. Invalid object
+	}
+}
+
+UINT_PTR MonoCollector::GetImageFromAssembly(void* Assembly)
+{
+	void* image = mono_assembly_get_image(Assembly);
+	return (UINT_PTR)image;
+}
+
+size_t MonoCollector::EnumDomains(std::vector<UINT64>& ret)
+{
+	if (il2cpp)
+	{
+		ret.push_back(UINT_PTR(mono_domain_get()));
+		return 1;
+	}
+	else
+	{
+		mono_domain_foreach((MonoDomainFunc)DomainEnumerator, &ret);
+		return ret.size();
+	}
 }
 
 size_t MonoCollector::EnumAssemblies(std::vector<UINT64>& ret)
@@ -36,11 +285,9 @@ size_t MonoCollector::EnumAssemblies(std::vector<UINT64>& ret)
 	{
 		if (mono_assembly_foreach)
 		{
-			mono_assembly_foreach((GFunc)AssemblyEnumerator, &v);
+			mono_assembly_foreach((GFunc)AssemblyEnumerator, &ret);
 
-			for (i = 0; i < v.size(); i++)
-				ret.push_back(v[i]);
-			return v.size();
+			return ret.size();
 		}
 		else
 		{

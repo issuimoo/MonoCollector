@@ -1,5 +1,7 @@
 ﻿#include "MonoCollector.hpp"
 
+#include <iostream>
+
 HWND StartConsole(const char* title, bool close) {
 	HANDLE g_hOutput = 0;
 	HWND hwnd = NULL;
@@ -26,7 +28,18 @@ void Th()
 	printf("size: %d \n\n\n", Mono->EnumAssemblies(ret));
 	for (size_t i = 0,max = ret.size(); i < max; i++)
 	{
-		printf("%d\n", ret[i]);
+		std::string s;
+		Mono->GetImageName((void*)Mono->GetImageFromAssembly((void*)ret[i]), s);
+		std::cout << s << "   " << ret[i] << std::endl;
+		std::vector<UINT_PTR> ret_ptr; std::vector<std::string> ret_string_class; std::vector<std::string> ret_string_namespace;
+		Mono->EnumClassesInImage((void*)Mono->GetImageFromAssembly((void*)ret[i]), ret_ptr, ret_string_class, ret_string_namespace);
+		
+		std::cout << ret_string_namespace.size() << "   " << ret_string_class.size() << "   " << ret_string_namespace.size() << std::endl;
+		
+		for (size_t i2 = 0, max2 = ret_ptr.size(); i2 < max2; i2++)
+		{
+			std::cout << "---" << ret_string_namespace[i2] << "->" << ret_string_class[i2] << "   " << ret_ptr[i2] << std::endl;
+		}
 	}
 }
 
