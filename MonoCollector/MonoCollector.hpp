@@ -224,50 +224,51 @@ typedef void* (__cdecl* IL2CPP_METHOD_GET_RETURN_TYPE)(void* method);
 typedef void* (__cdecl* IL2CPP_CLASS_FROM_TYPE)(void* type);
 typedef wchar_t* (__cdecl* IL2CPP_STRING_CHARS)(void* stringobject);
 
+struct EnumClassesInImage_ret
+{
+	UINT_PTR ptr;
+	std::string string_class;
+	std::string string_namespace;
+};
 
+struct EnumFieldsInClass_ret
+{
+	std::string Name;
+	std::string Type;
+};
 
 class MonoCollector
 {
 public:
 
-	MonoCollector();
+	MonoCollector(std::string ModuleName);
 	~MonoCollector();
 
-	/*
-	是否il2cpp
-	*/
+	//是否il2cpp
 	friend bool Isil2cpp(MonoCollector* _this);
 
-	/*
-	枚举组件
-	ret: 组件数量
-	1. 返回
-	*/
-	size_t EnumAssemblies(std::vector<UINT64>& ret);
+	//枚举模块
+	size_t EnumModules(std::vector<UINT_PTR>& ret);
 	
-	/*
-	枚举域名
-	ret: 数量
-	1. 返回
-	*/
-	size_t EnumDomains(std::vector<UINT64>& ret);
+	//枚举域
+	size_t EnumDomains(std::vector<UINT_PTR>& ret);
 
-	/*
-	从程序集Image
-	*/
-	UINT_PTR GetImageFromAssembly(void* Assembly);
+	//从程序集获取Image
+	UINT_PTR GetImageFromModules(UINT_PTR Module);
 
-	bool Object_GetClass(void* object, UINT64& r_klass, std::string& classname_p);
+	//Object_获取类
+	bool Object_GetClass(UINT_PTR object, UINT64& r_klass, std::string& classname_p);
 
-	int SetCurrentDomain(void* domain);
+	//设置当前域
+	int SetCurrentDomain(UINT_PTR domain);
 
-	void GetImageName(void* image, std::string& s);
+	void GetImageName(UINT_PTR image, std::string& s);
 
-	void GetImageFileName(void* image, std::string& s);
+	void GetImageFileName(UINT_PTR image, std::string& s);
 
-	bool EnumClassesInImage(void* image, std::vector<UINT_PTR>& ret_ptr, std::vector<std::string>& ret_string_class, std::vector<std::string>& ret_string_namespace);
+	bool EnumClassesInImage(UINT_PTR image, std::vector<EnumClassesInImage_ret>& ret);
 
-	void EnumFieldsInClass(void* c, void*& field, void*& fieldtype, int& type, UINT_PTR& field_parent, DWORD& field_offset, int& field_flags, std::vector<std::string>& Names, std::vector<std::string>& Types);
+	void EnumFieldsInClass(UINT_PTR c, UINT_PTR& field, UINT_PTR& fieldtype, int& type, UINT_PTR& field_parent, DWORD& field_offset, int& field_flags, std::vector<EnumFieldsInClass_ret>& ret);
 
 
 private:

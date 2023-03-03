@@ -26,205 +26,128 @@ void _cdecl DomainEnumerator(void* domain, std::vector<UINT64>* v)
 	v->push_back((UINT_PTR)domain);
 }
 
-void MonoCollector::EnumFieldsInClass(void* c, void*& field, void*& fieldtype,int& type, UINT_PTR& field_parent, DWORD& field_offset, int& field_flags,std::vector<std::string>& Names, std::vector<std::string>& Types)
+void MonoCollector::EnumFieldsInClass(UINT_PTR c, UINT_PTR& field, UINT_PTR& fieldtype, int& type, UINT_PTR& field_parent, DWORD& field_offset, int& field_flags, std::vector<EnumFieldsInClass_ret>& ret)
 {
 	void* iter = NULL;
-
 	do
 	{
-		field = mono_class_get_fields(c, &iter);
+		field = (UINT_PTR)mono_class_get_fields((void*)c, &iter);
+		if (!field)
+			continue;
 
-		if (field)
+		fieldtype = (UINT_PTR)mono_field_get_type((void*)field);
+		type = (int)mono_type_get_type((void*)fieldtype);
+		field_parent = (UINT_PTR)mono_field_get_parent((void*)field);
+		field_offset = (DWORD)mono_field_get_offset((void*)field);
+		field_flags = mono_field_get_flags((void*)field);
+
+		char* name = mono_field_get_name((void*)field);
+		char* stype = mono_type_get_name((void*)fieldtype);
+		std::string sName = name;
+		std::string sType = stype;
+
+		if ((BYTE)name[0] == 0xEE) 
 		{
-			fieldtype = mono_field_get_type(field);
-			type = mono_type_get_type(fieldtype);
-			field_parent = (UINT_PTR)mono_field_get_parent(field);
-			field_offset = (DWORD)mono_field_get_offset(field);
-			field_flags = mono_field_get_flags(field);
+			char szUeName[32];
+			sprintf_s(szUeName, 32, "\\u%04X", UTF8TOUTF16(name));
+			sName = szUeName;
+		}
+		if ((BYTE)stype[0] == 0xEE) 
+		{
+			char szUeName[32];
+			sprintf_s(szUeName, 32, "\\u%04X", UTF8TOUTF16(stype));
+			sType = szUeName;
+		}
 
+		EnumFieldsInClass_ret Temp;
+		Temp.Name = sName;
+		Temp.Type = sType;
+		ret.push_back(Temp);
+	} while (field);
+}
 
+bool MonoCollector::EnumClassesInImage(UINT_PTR image,std::vector<EnumClassesInImage_ret>& ret)
+{
+	ret.clear();
+	if (il2cpp)
+	{
+		if (!il2cpp_image_get_class_count || !il2cpp_image_get_class)
+			return false;
 
-			char* name = mono_field_get_name(field);
-			char* type = mono_type_get_name(fieldtype);
-			std::string sName = std::string(name);
-			std::string sType = std::string(type);
-			//check if name is x ...
+		int count = il2cpp_image_get_class_count((void*)image); 
+		ret.reserve(count);
 
-			if ((BYTE)name[0] == 0xEE) {
+		for (int i = 0; i < count; i++)
+		{
+			EnumClassesInImage_ret Temp;
+			Temp.ptr = (UINT_PTR)il2cpp_image_get_class((void*)image, i);
+			if (Temp.ptr == NULL)
+				continue;
+
+			Temp.string_class = mono_class_get_name((void*)Temp.ptr);
+			Temp.string_namespace = mono_class_get_namespace((void*)Temp.ptr);
+			ret.push_back(Temp);
+		}
+	}
+	else
+	{
+		void* tdef = mono_image_get_table_info((void*)image, MONO_TABLE_TYPEDEF);
+		if (!tdef)
+			return false;
+
+		int tdefcount = mono_table_info_get_rows(tdef);
+		ret.reserve(tdefcount);
+
+		for (int i = 0; i < tdefcount; i++)
+		{
+			EnumClassesInImage_ret Temp;
+			Temp.ptr = (UINT_PTR)mono_class_get((void*)image, MONO_TOKEN_TYPE_DEF | (i + 1));
+			if (Temp.ptr == NULL)
+				continue;
+
+			char* name = mono_class_get_name((void*)Temp.ptr);
+			std::string sName = name;
+
+			if ((BYTE)name[0] == 0xEE) 
+			{
 				char szUeName[32];
 				sprintf_s(szUeName, 32, "\\u%04X", UTF8TOUTF16(name));
 				sName = szUeName;
 			}
-			if ((BYTE)type[0] == 0xEE) {
-				char szUeName[32];
-				sprintf_s(szUeName, 32, "\\u%04X", UTF8TOUTF16(type));
-				sType = szUeName;
-			}
 
-			Names.push_back(sName);
-
-			if (type)
-			{
-				Types.push_back(sType);
-			}
-			else
-				Types.push_back("");
-
-		}
-	} while (field);
-}
-
-bool MonoCollector::EnumClassesInImage(void* image,std::vector<UINT_PTR>& ret_ptr, std::vector<std::string>& ret_string_class, std::vector<std::string>& ret_string_namespace)
-{
-	int i;
-
-	ret_ptr.clear();
-	ret_string_class.clear();
-	ret_string_namespace.clear();
-
-	if (image == NULL)
-	{
-		return false;
-	}
-
-	if (il2cpp)
-	{
-		int count = 0;
-		if (il2cpp_image_get_class_count)
-		{
-			count = il2cpp_image_get_class_count(image);
-		}
-
-		ret_ptr.reserve(count);
-		ret_string_class.reserve(count);
-		ret_string_namespace.reserve(count);
-
-		for (i = 0; i < count; i++)
-		{
-			if (il2cpp_image_get_class)
-			{
-				void* c = il2cpp_image_get_class(image, i);
-				ret_ptr.push_back((UINT_PTR)c);
-
-				if (c)
-				{
-					std::string name = mono_class_get_name(c);
-					ret_string_class.push_back(name);
-
-					name = mono_class_get_namespace(c);
-					ret_string_namespace.push_back(name);
-				}
-				else
-				{
-					ret_string_class.push_back("");
-					ret_string_namespace.push_back("");
-				}
-			}
-			else
-			{
-				ret_string_class.push_back("");
-				ret_string_namespace.push_back("");
-				ret_ptr.push_back((UINT_PTR)0);
-			}
-		}
-	}
-	else
-	{
-
-		void* tdef = mono_image_get_table_info(image, MONO_TABLE_TYPEDEF);
-		if (tdef)
-		{
-			int tdefcount = mono_table_info_get_rows(tdef);
-			ret_ptr.clear();
-			ret_ptr.reserve(tdefcount);
-
-			for (i = 0; i < tdefcount; i++)
-			{
-				void* c = mono_class_get(image, MONO_TOKEN_TYPE_DEF | (i + 1));
-				if (c != NULL)
-				{
-					char* name = mono_class_get_name(c);
-
-					ret_ptr.push_back((UINT_PTR)c);
-
-
-					std::string sName = std::string(name);
-
-					if ((BYTE)name[0] == 0xEE) {
-						char szUeName[32];
-						sprintf_s(szUeName, 32, "\\u%04X", UTF8TOUTF16(name));
-						sName = szUeName;
-					}
-
-					if (c)
-					{
-						std::string s = sName;
-						ret_string_class.push_back(s);
-					}
-					else
-						ret_string_class.push_back("");
-
-					name = mono_class_get_namespace(c);
-					if (name)
-					{
-						std::string s = name;
-						ret_string_namespace.push_back(s);
-					}
-					else
-						ret_string_namespace.push_back("");
-				}
-				else
-				{
-					ret_string_class.push_back("");
-					ret_string_namespace.push_back("");
-					ret_ptr.push_back((UINT_PTR)0);
-				}
-			}
-		}
-		else
-		{
-			return false;
+			Temp.string_class = sName;
+			Temp.string_namespace = mono_class_get_namespace((void*)Temp.ptr);
+			ret.push_back(Temp);
 		}
 	}
 }
 
-void MonoCollector::GetImageFileName(void* image, std::string& s)
+void MonoCollector::GetImageFileName(UINT_PTR image, std::string& s)
 {
-	s = mono_image_get_filename(image);
+	s = mono_image_get_filename((void*)image);
 }
 
-void MonoCollector::GetImageName(void* image,std::string& s)
+void MonoCollector::GetImageName(UINT_PTR image,std::string& s)
 {
-	s = mono_image_get_name(image);
+	s = mono_image_get_name((void*)image);
 }
 
-int MonoCollector::SetCurrentDomain(void* domain)
+int MonoCollector::SetCurrentDomain(UINT_PTR domain)
 {
 	if (mono_domain_set)
-		return mono_domain_set(domain, FALSE);
+		return mono_domain_set((void*)domain, FALSE);
 	else
 		return 0;
 }
 
-bool MonoCollector::Object_GetClass(void* object, UINT64& r_klass, std::string& classname_p)
+bool MonoCollector::Object_GetClass(UINT_PTR object, UINT64& r_klass, std::string& classname_p)
 {
 	char* classname;
 	void* klass;
-
 	try
 	{
-		unsigned int i;
-
-		klass = mono_object_get_class(object);
+		klass = mono_object_get_class((void*)object);
 		classname = mono_class_get_name(klass);
-
-		//small test to see if the classname is readable
-		for (i = 0; i < strlen(classname); i++)
-		{
-			char x = classname[i];
-			if (x == '\0')
-				break;
-		}
 
 		if (klass != 0)
 		{
@@ -235,22 +158,19 @@ bool MonoCollector::Object_GetClass(void* object, UINT64& r_klass, std::string& 
 		{
 			return false;
 		}
-
-
 	}
 	catch (...)
 	{
-		return false; //failure. Invalid object
+		return false;
 	}
 }
 
-UINT_PTR MonoCollector::GetImageFromAssembly(void* Assembly)
+UINT_PTR MonoCollector::GetImageFromModules(UINT_PTR Module)
 {
-	void* image = mono_assembly_get_image(Assembly);
-	return (UINT_PTR)image;
+	return (UINT_PTR)mono_assembly_get_image((void*)Module);
 }
 
-size_t MonoCollector::EnumDomains(std::vector<UINT64>& ret)
+size_t MonoCollector::EnumDomains(std::vector<UINT_PTR>& ret)
 {
 	if (il2cpp)
 	{
@@ -264,11 +184,8 @@ size_t MonoCollector::EnumDomains(std::vector<UINT64>& ret)
 	}
 }
 
-size_t MonoCollector::EnumAssemblies(std::vector<UINT64>& ret)
+size_t MonoCollector::EnumModules(std::vector<UINT_PTR>& ret)
 {
-	unsigned int i;
-	std::vector<UINT64> v;
-
 	if (il2cpp)
 	{
 		DWORD i;
@@ -277,7 +194,9 @@ size_t MonoCollector::EnumAssemblies(std::vector<UINT64>& ret)
 		UINT_PTR* assemblies;
 		assemblies = il2cpp_domain_get_assemblies(mono_domain_get(), &nrofassemblies);
 
-		for (i = 0; i < (DWORD)nrofassemblies; i++)
+		ret.clear();
+		ret.reserve(nrofassemblies);
+		for (i = 0; i < nrofassemblies; i++)
 			ret.push_back(assemblies[i]);
 		return nrofassemblies;
 	}
@@ -286,7 +205,6 @@ size_t MonoCollector::EnumAssemblies(std::vector<UINT64>& ret)
 		if (mono_assembly_foreach)
 		{
 			mono_assembly_foreach((GFunc)AssemblyEnumerator, &ret);
-
 			return ret.size();
 		}
 		else
@@ -301,37 +219,18 @@ MonoCollector::~MonoCollector()
 	mono_thread_detach(mono_selfthread);
 }
 
-MonoCollector::MonoCollector()
+MonoCollector::MonoCollector(std::string ModuleName)
 {
-	HMODULE hMono = GetModuleHandle("mono.dll");
+	HMODULE hMono = GetModuleHandleA(ModuleName.c_str());
 
 	if (!hMono)
 	{
-		//this process doesn't use mono.dll  Perhaps it's renamed.  Find a module that exports mono_thread_attach
-		HANDLE ths = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, GetCurrentProcessId());
-		if (ths != INVALID_HANDLE_VALUE)
-		{
-			MODULEENTRY32 me;
-			me.dwSize = sizeof(me);
+		return;
+	}
 
-			if (Module32First(ths, &me))
-			{
-				do
-				{
-					if (GetProcAddress(me.hModule, "mono_thread_attach"))
-						hMono = me.hModule;
-
-					if (GetProcAddress(me.hModule, "il2cpp_thread_attach"))
-					{
-						il2cpp = true;
-						hMono = me.hModule;
-					}
-
-				} while (!hMono && Module32Next(ths, &me));
-
-			}
-			CloseHandle(ths);
-		}
+	if (GetProcAddress(hMono, "il2cpp_thread_attach"))
+	{
+		il2cpp = true;
 	}
 
 	if (il2cpp)
@@ -475,7 +374,7 @@ MonoCollector::MonoCollector()
 		il2cpp_class_from_type = (IL2CPP_CLASS_FROM_TYPE)GetProcAddress(hMono, "il2cpp_class_from_type");
 		il2cpp_string_chars = (IL2CPP_STRING_CHARS)GetProcAddress(hMono, "il2cpp_string_chars");
 
-		//mono_runtime_is_shutting_down = (MONO_RUNTIME_IS_SHUTTING_DOWN)GetProcAddress(hMono, "il2cpp_runtime_is_shutting_down");  //doesn't seem to exist in il2cpp....
+		mono_runtime_is_shutting_down = (MONO_RUNTIME_IS_SHUTTING_DOWN)GetProcAddress(hMono, "il2cpp_runtime_is_shutting_down");  //doesn't seem to exist in il2cpp....
 
 		mono_runtime_is_shutting_down = (MONO_RUNTIME_IS_SHUTTING_DOWN)GetProcAddress(hMono, "mono_runtime_is_shutting_down"); //some do, with this name...
 		domain = mono_domain_get();
