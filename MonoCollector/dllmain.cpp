@@ -23,27 +23,22 @@ HWND StartConsole(const char* title, bool close) {
 void Th()
 {
 	system("pause");
-	MonoCollector* Mono = new MonoCollector("GameAssembly.dll");
-	std::vector<UINT64> ret;
-	std::vector<UINT64> ret2;
-	printf("hmodule: %i \n", (int)GetModuleHandleA("GameAssembly.dll"));
-	printf("Address: %i \n", (int)GetProcAddress(GetModuleHandleA("GameAssembly.dll"), "il2cpp_thread_attach"));
-	printf("Domains: %i \n", (int)Mono->EnumDomains(ret2));
-	printf("Domains[0]: %i \n", (int)ret2[0]);
-	printf("Modules: %i \n\n\n", (int)Mono->EnumModules(ret));
-	for (size_t i = 0,max = ret.size(); i < max; i++)
+	Untiy3D::MonoCollector* Mono = new Untiy3D::MonoCollector("GameAssembly.dll");
+
+	StartConsole("",true);
+
+	std::vector<Il2CppAssembly*> Assemblys;
+	std::cout << "size:" << Mono->EnummAssembly(Assemblys) << std::endl;
+	for (size_t i = 0,max = Assemblys.size(); i < max; i++)
 	{
-		std::string s;
-		Mono->GetImageName((void*)Mono->GetImageFromAssembly((void*)ret[i]), s);
-		std::cout << s << "   " << ret[i] << std::endl;
-		std::vector<UINT_PTR> ret_ptr; std::vector<std::string> ret_string_class; std::vector<std::string> ret_string_namespace;
-		Mono->EnumClassesInImage((void*)Mono->GetImageFromAssembly((void*)ret[i]), ret_ptr, ret_string_class, ret_string_namespace);
-		
-		std::cout << ret_string_namespace.size() << "   " << ret_string_class.size() << "   " << ret_string_namespace.size() << std::endl;
-		
-		for (size_t i2 = 0, max2 = ret_ptr.size(); i2 < max2; i2++)
+		Il2CppImage* image = Mono->GetImageInAssembly(Assemblys[i]);
+		std::cout << "[" << i << "] " << Mono->GetImageName(image) << std::endl;
+
+		std::vector<Untiy3D::ClassInfo> Class;
+		Mono->EnumClassesInImage(image, Class);
+		for (size_t i = 0, max = Class.size(); i < max; i++)
 		{
-			std::cout << "---" << ret_string_namespace[i2] << "->" << ret_string_class[i2] << "   " << ret_ptr[i2] << std::endl;
+			std::cout << "[" << Class[i].name_space << "] " << Class[i].name << std::endl;
 		}
 	}
 }
@@ -53,7 +48,6 @@ BOOL APIENTRY DllMain(HMODULE hModule,DWORD ul_reason_for_call,LPVOID lpReserved
     switch (ul_reason_for_call)
     {
     case DLL_PROCESS_ATTACH:
-		StartConsole("123", false);
 		CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)Th, NULL, NULL, NULL);
     case DLL_THREAD_ATTACH:
     case DLL_THREAD_DETACH:

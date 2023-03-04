@@ -1,529 +1,449 @@
 #include "MonoCollector.hpp"
 
-WORD UTF8TOUTF16(char* szUtf8) {
+#define DO_API(ret_type, name, args )\
+  name = reinterpret_cast<name##_t>(GetProcAddress(Untiy3D::hModuleMono, #name));
+
+WORD UTF8TOUTF16(char* szUtf8) 
+{
 	std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
 	std::u16string dest = convert.from_bytes(szUtf8);
 	return *(WORD*)&dest[0];
 }
 
-bool Isil2cpp(MonoCollector* _this)
+namespace UntiyMono
 {
-	return _this->il2cpp;
-}
-
-void __cdecl customfreeimplementation(PVOID address)
-{
-	
-}
-
-void _cdecl AssemblyEnumerator(void* domain, std::vector<UINT64>* v)
-{
-	v->push_back((UINT_PTR)domain);
-}
-
-void _cdecl DomainEnumerator(void* domain, std::vector<UINT64>* v)
-{
-	v->push_back((UINT_PTR)domain);
-}
-
-void MonoCollector::EnumFieldsInClass(UINT_PTR c, UINT_PTR& field, UINT_PTR& fieldtype, int& type, UINT_PTR& field_parent, DWORD& field_offset, int& field_flags, std::vector<EnumFieldsInClass_ret>& ret)
-{
-	void* iter = NULL;
-	do
+	void _cdecl vectorpushback(void* ptr, std::vector<DWORD_PTR>& v)
 	{
-		field = (UINT_PTR)mono_class_get_fields((void*)c, &iter);
-		if (!field)
-			continue;
+		v.push_back((UINT_PTR)ptr);
+	}
+}
 
-		fieldtype = (UINT_PTR)mono_field_get_type((void*)field);
-		type = (int)mono_type_get_type((void*)fieldtype);
-		field_parent = (UINT_PTR)mono_field_get_parent((void*)field);
-		field_offset = (DWORD)mono_field_get_offset((void*)field);
-		field_flags = mono_field_get_flags((void*)field);
+namespace Untiy3D
+{
+	MonoCollector::~MonoCollector()
+	{
 
-		char* name = mono_field_get_name((void*)field);
-		char* stype = mono_type_get_name((void*)fieldtype);
-		std::string sName = name;
-		std::string sType = stype;
+	}
 
-		if ((BYTE)name[0] == 0xEE) 
+	MonoCollector::MonoCollector(std::string ModuleName)
+	{
+		hModuleMono = GetModuleHandleA(ModuleName.c_str());
+
+		if (!hModuleMono)
 		{
-			char szUeName[32];
-			sprintf_s(szUeName, 32, "\\u%04X", UTF8TOUTF16(name));
-			sName = szUeName;
-		}
-		if ((BYTE)stype[0] == 0xEE) 
-		{
-			char szUeName[32];
-			sprintf_s(szUeName, 32, "\\u%04X", UTF8TOUTF16(stype));
-			sType = szUeName;
+			MessageBox(NULL, "Can not find Module", "error", NULL);
+			return;
 		}
 
-		EnumFieldsInClass_ret Temp;
-		Temp.Name = sName;
-		Temp.Type = sType;
-		ret.push_back(Temp);
-	} while (field);
-}
-
-bool MonoCollector::EnumClassesInImage(UINT_PTR image,std::vector<EnumClassesInImage_ret>& ret)
-{
-	ret.clear();
-	if (il2cpp)
-	{
-		if (!il2cpp_image_get_class_count || !il2cpp_image_get_class)
-			return false;
-
-		int count = il2cpp_image_get_class_count((void*)image); 
-		ret.reserve(count);
-
-		for (int i = 0; i < count; i++)
+		if (GetProcAddress(hModuleMono, "il2cpp_thread_attach"))
 		{
-			EnumClassesInImage_ret Temp;
-			Temp.ptr = (UINT_PTR)il2cpp_image_get_class((void*)image, i);
-			if (Temp.ptr == NULL)
-				continue;
+			il2cpp = true;
+		}
 
-			Temp.string_class = mono_class_get_name((void*)Temp.ptr);
-			Temp.string_namespace = mono_class_get_namespace((void*)Temp.ptr);
-			ret.push_back(Temp);
+		if (il2cpp)
+		{
+			Getil2cppFunc();
+		}
+		else
+		{
+			GetMonoFunc();
 		}
 	}
-	else
+
+	void MonoCollector::GetMonoFunc()
 	{
-		void* tdef = mono_image_get_table_info((void*)image, MONO_TABLE_TYPEDEF);
-		if (!tdef)
-			return false;
+		
+	}
 
-		int tdefcount = mono_table_info_get_rows(tdef);
-		ret.reserve(tdefcount);
+	void MonoCollector::Getil2cppFunc()
+	{
+		DO_API(void, il2cpp_init, (const char* domain_name));
+		DO_API(void, il2cpp_init_utf16, (const Il2CppChar * domain_name));
+		DO_API(void, il2cpp_shutdown, ());
+		DO_API(void, il2cpp_dumping_memory, (bool val));
+		DO_API(void, il2cpp_set_config_dir, (const char* config_path));
+		DO_API(void, il2cpp_set_data_dir, (const char* data_path));
+		DO_API(void, il2cpp_set_temp_dir, (const char* temp_path));
+		DO_API(void, il2cpp_set_commandline_arguments, (int argc, const char* const argv[], const char* basedir));
+		DO_API(void, il2cpp_set_commandline_arguments_utf16, (int argc, const Il2CppChar* const argv[], const char* basedir));
+		DO_API(void, il2cpp_set_config_utf16, (const Il2CppChar * executablePath));
+		DO_API(void, il2cpp_set_config, (const char* executablePath));
 
-		for (int i = 0; i < tdefcount; i++)
+		DO_API(void, il2cpp_set_memory_callbacks, (Il2CppMemoryCallbacks * callbacks));
+		DO_API(const Il2CppImage*, il2cpp_get_corlib, ());
+		DO_API(void, il2cpp_add_internal_call, (const char* name, Il2CppMethodPointer method));
+		DO_API(Il2CppMethodPointer, il2cpp_resolve_icall, (const char* name));
+
+		DO_API(void*, il2cpp_alloc, (size_t size));
+		DO_API(void, il2cpp_free, (void* ptr));
+
+		// array
+		DO_API(Il2CppClass*, il2cpp_array_class_get, (Il2CppClass * element_class, uint32_t rank));
+		DO_API(uint32_t, il2cpp_array_length, (Il2CppArray * array));
+		DO_API(uint32_t, il2cpp_array_get_byte_length, (Il2CppArray * array));
+		DO_API(Il2CppArray*, il2cpp_array_new, (Il2CppClass * elementTypeInfo, il2cpp_array_size_t length));
+		DO_API(Il2CppArray*, il2cpp_array_new_specific, (Il2CppClass * arrayTypeInfo, il2cpp_array_size_t length));
+		DO_API(Il2CppArray*, il2cpp_array_new_full, (Il2CppClass * array_class, il2cpp_array_size_t * lengths, il2cpp_array_size_t * lower_bounds));
+		DO_API(Il2CppClass*, il2cpp_bounded_array_class_get, (Il2CppClass * element_class, uint32_t rank, bool bounded));
+		DO_API(int, il2cpp_array_element_size, (const Il2CppClass * array_class));
+
+		// assembly
+		DO_API(const Il2CppImage*, il2cpp_assembly_get_image, (const Il2CppAssembly * assembly));
+
+		// class
+		DO_API(const Il2CppType*, il2cpp_class_enum_basetype, (Il2CppClass * klass));
+		DO_API(bool, il2cpp_class_is_generic, (const Il2CppClass * klass));
+		DO_API(bool, il2cpp_class_is_inflated, (const Il2CppClass * klass));
+		DO_API(bool, il2cpp_class_is_assignable_from, (Il2CppClass * klass, Il2CppClass * oklass));
+		DO_API(bool, il2cpp_class_is_subclass_of, (Il2CppClass * klass, Il2CppClass * klassc, bool check_interfaces));
+		DO_API(bool, il2cpp_class_has_parent, (Il2CppClass * klass, Il2CppClass * klassc));
+		DO_API(Il2CppClass*, il2cpp_class_from_il2cpp_type, (const Il2CppType * type));
+		DO_API(Il2CppClass*, il2cpp_class_from_name, (const Il2CppImage * image, const char* namespaze, const char* name));
+		DO_API(Il2CppClass*, il2cpp_class_from_system_type, (Il2CppReflectionType * type));
+		DO_API(Il2CppClass*, il2cpp_class_get_element_class, (Il2CppClass * klass));
+		DO_API(const EventInfo*, il2cpp_class_get_events, (Il2CppClass * klass, void** iter));
+		DO_API(FieldInfo*, il2cpp_class_get_fields, (Il2CppClass * klass, void** iter));
+		DO_API(Il2CppClass*, il2cpp_class_get_nested_types, (Il2CppClass * klass, void** iter));
+		DO_API(Il2CppClass*, il2cpp_class_get_interfaces, (Il2CppClass * klass, void** iter));
+		DO_API(const PropertyInfo*, il2cpp_class_get_properties, (Il2CppClass * klass, void** iter));
+		DO_API(const PropertyInfo*, il2cpp_class_get_property_from_name, (Il2CppClass * klass, const char* name));
+		DO_API(FieldInfo*, il2cpp_class_get_field_from_name, (Il2CppClass * klass, const char* name));
+		DO_API(const MethodInfo*, il2cpp_class_get_methods, (Il2CppClass * klass, void** iter));
+		DO_API(const MethodInfo*, il2cpp_class_get_method_from_name, (Il2CppClass * klass, const char* name, int argsCount));
+		DO_API(const char*, il2cpp_class_get_name, (Il2CppClass * klass));
+		DO_API(const char*, il2cpp_class_get_namespace, (Il2CppClass * klass));
+		DO_API(Il2CppClass*, il2cpp_class_get_parent, (Il2CppClass * klass));
+		DO_API(Il2CppClass*, il2cpp_class_get_declaring_type, (Il2CppClass * klass));
+		DO_API(int32_t, il2cpp_class_instance_size, (Il2CppClass * klass));
+		DO_API(size_t, il2cpp_class_num_fields, (const Il2CppClass * enumKlass));
+		DO_API(bool, il2cpp_class_is_valuetype, (const Il2CppClass * klass));
+		DO_API(int32_t, il2cpp_class_value_size, (Il2CppClass * klass, uint32_t * align));
+		DO_API(bool, il2cpp_class_is_blittable, (const Il2CppClass * klass));
+		DO_API(int, il2cpp_class_get_flags, (const Il2CppClass * klass));
+		DO_API(bool, il2cpp_class_is_abstract, (const Il2CppClass * klass));
+		DO_API(bool, il2cpp_class_is_interface, (const Il2CppClass * klass));
+		DO_API(int, il2cpp_class_array_element_size, (const Il2CppClass * klass));
+		DO_API(Il2CppClass*, il2cpp_class_from_type, (const Il2CppType * type));
+		DO_API(const Il2CppType*, il2cpp_class_get_type, (Il2CppClass * klass));
+		DO_API(uint32_t, il2cpp_class_get_type_token, (Il2CppClass * klass));
+		DO_API(bool, il2cpp_class_has_attribute, (Il2CppClass * klass, Il2CppClass * attr_class));
+		DO_API(bool, il2cpp_class_has_references, (Il2CppClass * klass));
+		DO_API(bool, il2cpp_class_is_enum, (const Il2CppClass * klass));
+		DO_API(const Il2CppImage*, il2cpp_class_get_image, (Il2CppClass * klass));
+		DO_API(const char*, il2cpp_class_get_assemblyname, (const Il2CppClass * klass));
+		DO_API(int, il2cpp_class_get_rank, (const Il2CppClass * klass));
+
+		// testing only
+		DO_API(size_t, il2cpp_class_get_bitmap_size, (const Il2CppClass * klass));
+		DO_API(void, il2cpp_class_get_bitmap, (Il2CppClass * klass, size_t * bitmap));
+
+		// stats
+		DO_API(bool, il2cpp_stats_dump_to_file, (const char* path));
+		DO_API(uint64_t, il2cpp_stats_get_value, (Il2CppStat stat));
+
+		// domain
+		DO_API(Il2CppDomain*, il2cpp_domain_get, ());
+		DO_API(const Il2CppAssembly*, il2cpp_domain_assembly_open, (Il2CppDomain * domain, const char* name));
+		DO_API(const Il2CppAssembly**, il2cpp_domain_get_assemblies, (const Il2CppDomain * domain, size_t * size));
+
+		// exception
+		DO_API(void, il2cpp_raise_exception, (Il2CppException*));
+		DO_API(Il2CppException*, il2cpp_exception_from_name_msg, (const Il2CppImage * image, const char* name_space, const char* name, const char* msg));
+		DO_API(Il2CppException*, il2cpp_get_exception_argument_null, (const char* arg));
+		DO_API(void, il2cpp_format_exception, (const Il2CppException * ex, char* message, int message_size));
+		DO_API(void, il2cpp_format_stack_trace, (const Il2CppException * ex, char* output, int output_size));
+		DO_API(void, il2cpp_unhandled_exception, (Il2CppException*));
+
+		// field
+		DO_API(int, il2cpp_field_get_flags, (FieldInfo * field));
+		DO_API(const char*, il2cpp_field_get_name, (FieldInfo * field));
+		DO_API(Il2CppClass*, il2cpp_field_get_parent, (FieldInfo * field));
+		DO_API(size_t, il2cpp_field_get_offset, (FieldInfo * field));
+		DO_API(const Il2CppType*, il2cpp_field_get_type, (FieldInfo * field));
+		DO_API(void, il2cpp_field_get_value, (Il2CppObject * obj, FieldInfo * field, void* value));
+		DO_API(Il2CppObject*, il2cpp_field_get_value_object, (FieldInfo * field, Il2CppObject * obj));
+		DO_API(bool, il2cpp_field_has_attribute, (FieldInfo * field, Il2CppClass * attr_class));
+		DO_API(void, il2cpp_field_set_value, (Il2CppObject * obj, FieldInfo * field, void* value));
+		DO_API(void, il2cpp_field_static_get_value, (FieldInfo * field, void* value));
+		DO_API(void, il2cpp_field_static_set_value, (FieldInfo * field, void* value));
+		DO_API(void, il2cpp_field_set_value_object, (Il2CppObject * instance, FieldInfo * field, Il2CppObject * value));
+
+		// gc
+		DO_API(void, il2cpp_gc_collect, (int maxGenerations));
+		DO_API(int32_t, il2cpp_gc_collect_a_little, ());
+		DO_API(void, il2cpp_gc_disable, ());
+		DO_API(void, il2cpp_gc_enable, ());
+		DO_API(bool, il2cpp_gc_is_disabled, ());
+		DO_API(int64_t, il2cpp_gc_get_used_size, ());
+		DO_API(int64_t, il2cpp_gc_get_heap_size, ());
+		DO_API(void, il2cpp_gc_wbarrier_set_field, (Il2CppObject * obj, void** targetAddress, void* object));
+
+		// gchandle
+		DO_API(uint32_t, il2cpp_gchandle_new, (Il2CppObject * obj, bool pinned));
+		DO_API(uint32_t, il2cpp_gchandle_new_weakref, (Il2CppObject * obj, bool track_resurrection));
+		DO_API(Il2CppObject*, il2cpp_gchandle_get_target, (uint32_t gchandle));
+		DO_API(void, il2cpp_gchandle_free, (uint32_t gchandle));
+
+		// liveness
+		DO_API(void*, il2cpp_unity_liveness_calculation_begin, (Il2CppClass * filter, int max_object_count, il2cpp_register_object_callback callback, void* userdata, il2cpp_WorldChangedCallback onWorldStarted, il2cpp_WorldChangedCallback onWorldStopped));
+		DO_API(void, il2cpp_unity_liveness_calculation_end, (void* state));
+		DO_API(void, il2cpp_unity_liveness_calculation_from_root, (Il2CppObject * root, void* state));
+		DO_API(void, il2cpp_unity_liveness_calculation_from_statics, (void* state));
+
+		// method
+		DO_API(const Il2CppType*, il2cpp_method_get_return_type, (const MethodInfo * method));
+		DO_API(Il2CppClass*, il2cpp_method_get_declaring_type, (const MethodInfo * method));
+		DO_API(const char*, il2cpp_method_get_name, (const MethodInfo * method));
+		DO_API(const MethodInfo*, il2cpp_method_get_from_reflection, (const Il2CppReflectionMethod * method));
+		DO_API(Il2CppReflectionMethod*, il2cpp_method_get_object, (const MethodInfo * method, Il2CppClass * refclass));
+		DO_API(bool, il2cpp_method_is_generic, (const MethodInfo * method));
+		DO_API(bool, il2cpp_method_is_inflated, (const MethodInfo * method));
+		DO_API(bool, il2cpp_method_is_instance, (const MethodInfo * method));
+		DO_API(uint32_t, il2cpp_method_get_param_count, (const MethodInfo * method));
+		DO_API(const Il2CppType*, il2cpp_method_get_param, (const MethodInfo * method, uint32_t index));
+		DO_API(Il2CppClass*, il2cpp_method_get_class, (const MethodInfo * method));
+		DO_API(bool, il2cpp_method_has_attribute, (const MethodInfo * method, Il2CppClass * attr_class));
+		DO_API(uint32_t, il2cpp_method_get_flags, (const MethodInfo * method, uint32_t * iflags));
+		DO_API(uint32_t, il2cpp_method_get_token, (const MethodInfo * method));
+		DO_API(const char*, il2cpp_method_get_param_name, (const MethodInfo * method, uint32_t index));
+
+		// profiler
+		DO_API(void, il2cpp_profiler_install, (Il2CppProfiler * prof, Il2CppProfileFunc shutdown_callback));
+		DO_API(void, il2cpp_profiler_set_events, (Il2CppProfileFlags events));
+		DO_API(void, il2cpp_profiler_install_enter_leave, (Il2CppProfileMethodFunc enter, Il2CppProfileMethodFunc fleave));
+		DO_API(void, il2cpp_profiler_install_allocation, (Il2CppProfileAllocFunc callback));
+		DO_API(void, il2cpp_profiler_install_gc, (Il2CppProfileGCFunc callback, Il2CppProfileGCResizeFunc heap_resize_callback));
+		DO_API(void, il2cpp_profiler_install_fileio, (Il2CppProfileFileIOFunc callback));
+		DO_API(void, il2cpp_profiler_install_thread, (Il2CppProfileThreadFunc start, Il2CppProfileThreadFunc end));
+
+		// property
+		DO_API(uint32_t, il2cpp_property_get_flags, (PropertyInfo * prop));
+		DO_API(const MethodInfo*, il2cpp_property_get_get_method, (PropertyInfo * prop));
+		DO_API(const MethodInfo*, il2cpp_property_get_set_method, (PropertyInfo * prop));
+		DO_API(const char*, il2cpp_property_get_name, (PropertyInfo * prop));
+		DO_API(Il2CppClass*, il2cpp_property_get_parent, (PropertyInfo * prop));
+
+		// object
+		DO_API(Il2CppClass*, il2cpp_object_get_class, (Il2CppObject * obj));
+		DO_API(uint32_t, il2cpp_object_get_size, (Il2CppObject * obj));
+		DO_API(const MethodInfo*, il2cpp_object_get_virtual_method, (Il2CppObject * obj, const MethodInfo * method));
+		DO_API(Il2CppObject*, il2cpp_object_new, (const Il2CppClass * klass));
+		DO_API(void*, il2cpp_object_unbox, (Il2CppObject * obj));
+
+		DO_API(Il2CppObject*, il2cpp_value_box, (Il2CppClass * klass, void* data));
+
+		// monitor
+		DO_API(void, il2cpp_monitor_enter, (Il2CppObject * obj));
+		DO_API(bool, il2cpp_monitor_try_enter, (Il2CppObject * obj, uint32_t timeout));
+		DO_API(void, il2cpp_monitor_exit, (Il2CppObject * obj));
+		DO_API(void, il2cpp_monitor_pulse, (Il2CppObject * obj));
+		DO_API(void, il2cpp_monitor_pulse_all, (Il2CppObject * obj));
+		DO_API(void, il2cpp_monitor_wait, (Il2CppObject * obj));
+		DO_API(bool, il2cpp_monitor_try_wait, (Il2CppObject * obj, uint32_t timeout));
+
+		// runtime
+		DO_API(Il2CppObject*, il2cpp_runtime_invoke, (const MethodInfo * method, void* obj, void** params, Il2CppException * *exc));
+		DO_API(Il2CppObject*, il2cpp_runtime_invoke_convert_args, (const MethodInfo * method, void* obj, Il2CppObject * *params, int paramCount, Il2CppException * *exc));
+		DO_API(void, il2cpp_runtime_class_init, (Il2CppClass * klass));
+		DO_API(void, il2cpp_runtime_object_init, (Il2CppObject * obj));
+
+		DO_API(void, il2cpp_runtime_object_init_exception, (Il2CppObject * obj, Il2CppException * *exc));
+
+		DO_API(void, il2cpp_runtime_unhandled_exception_policy_set, (Il2CppRuntimeUnhandledExceptionPolicy value));
+
+		// string
+		DO_API(int32_t, il2cpp_string_length, (Il2CppString * str));
+		DO_API(Il2CppChar*, il2cpp_string_chars, (Il2CppString * str));
+		DO_API(Il2CppString*, il2cpp_string_new, (const char* str));
+		DO_API(Il2CppString*, il2cpp_string_new_len, (const char* str, uint32_t length));
+		DO_API(Il2CppString*, il2cpp_string_new_utf16, (const Il2CppChar * text, int32_t len));
+		DO_API(Il2CppString*, il2cpp_string_new_wrapper, (const char* str));
+		DO_API(Il2CppString*, il2cpp_string_intern, (Il2CppString * str));
+		DO_API(Il2CppString*, il2cpp_string_is_interned, (Il2CppString * str));
+
+		// thread
+		DO_API(Il2CppThread*, il2cpp_thread_current, ());
+		DO_API(Il2CppThread*, il2cpp_thread_attach, (Il2CppDomain * domain));
+		DO_API(void, il2cpp_thread_detach, (Il2CppThread * thread));
+
+		DO_API(Il2CppThread**, il2cpp_thread_get_all_attached_threads, (size_t * size));
+		DO_API(bool, il2cpp_is_vm_thread, (Il2CppThread * thread));
+
+		// stacktrace
+		DO_API(void, il2cpp_current_thread_walk_frame_stack, (Il2CppFrameWalkFunc func, void* user_data));
+		DO_API(void, il2cpp_thread_walk_frame_stack, (Il2CppThread * thread, Il2CppFrameWalkFunc func, void* user_data));
+		DO_API(bool, il2cpp_current_thread_get_top_frame, (Il2CppStackFrameInfo * frame));
+		DO_API(bool, il2cpp_thread_get_top_frame, (Il2CppThread * thread, Il2CppStackFrameInfo * frame));
+		DO_API(bool, il2cpp_current_thread_get_frame_at, (int32_t offset, Il2CppStackFrameInfo * frame));
+		DO_API(bool, il2cpp_thread_get_frame_at, (Il2CppThread * thread, int32_t offset, Il2CppStackFrameInfo * frame));
+		DO_API(int32_t, il2cpp_current_thread_get_stack_depth, ());
+		DO_API(int32_t, il2cpp_thread_get_stack_depth, (Il2CppThread * thread));
+
+		// type
+		DO_API(Il2CppObject*, il2cpp_type_get_object, (const Il2CppType * type));
+		DO_API(int, il2cpp_type_get_type, (const Il2CppType * type));
+		DO_API(Il2CppClass*, il2cpp_type_get_class_or_element_class, (const Il2CppType * type));
+		DO_API(char*, il2cpp_type_get_name, (const Il2CppType * type));
+		DO_API(bool, il2cpp_type_is_byref, (const Il2CppType * type));
+		DO_API(uint32_t, il2cpp_type_get_attrs, (const Il2CppType * type));
+		DO_API(bool, il2cpp_type_equals, (const Il2CppType * type, const Il2CppType * otherType));
+		DO_API(char*, il2cpp_type_get_assembly_qualified_name, (const Il2CppType * type));
+
+		// image
+		DO_API(const Il2CppAssembly*, il2cpp_image_get_assembly, (const Il2CppImage * image));
+		DO_API(const char*, il2cpp_image_get_name, (const Il2CppImage * image));
+		DO_API(const char*, il2cpp_image_get_filename, (const Il2CppImage * image));
+		DO_API(const MethodInfo*, il2cpp_image_get_entry_point, (const Il2CppImage * image));
+
+		DO_API(size_t, il2cpp_image_get_class_count, (const Il2CppImage * image));
+		DO_API(const Il2CppClass*, il2cpp_image_get_class, (const Il2CppImage * image, size_t index));
+
+		// Memory information
+		DO_API(Il2CppManagedMemorySnapshot*, il2cpp_capture_memory_snapshot, ());
+		DO_API(void, il2cpp_free_captured_memory_snapshot, (Il2CppManagedMemorySnapshot * snapshot));
+
+		DO_API(void, il2cpp_set_find_plugin_callback, (Il2CppSetFindPlugInCallback method));
+
+		// Logging
+		DO_API(void, il2cpp_register_log_callback, (Il2CppLogCallback method));
+
+		// Debugger
+		DO_API(void, il2cpp_debugger_set_agent_options, (const char* options));
+		DO_API(bool, il2cpp_is_debugger_attached, ());
+
+		// TLS module
+		DO_API(void, il2cpp_unity_install_unitytls_interface, (const void* unitytlsInterfaceStruct));
+
+		// custom attributes
+		DO_API(Il2CppCustomAttrInfo*, il2cpp_custom_attrs_from_class, (Il2CppClass * klass));
+		DO_API(Il2CppCustomAttrInfo*, il2cpp_custom_attrs_from_method, (const MethodInfo * method));
+
+		DO_API(Il2CppObject*, il2cpp_custom_attrs_get_attr, (Il2CppCustomAttrInfo * ainfo, Il2CppClass * attr_klass));
+		DO_API(bool, il2cpp_custom_attrs_has_attr, (Il2CppCustomAttrInfo * ainfo, Il2CppClass * attr_klass));
+		DO_API(Il2CppArray*, il2cpp_custom_attrs_construct, (Il2CppCustomAttrInfo * cinfo));
+
+		DO_API(void, il2cpp_custom_attrs_free, (Il2CppCustomAttrInfo * ainfo));
+	}
+
+	DWORD MonoCollector::EnumMethodsInClass(Il2CppClass* klass, std::vector<MethodsInfo>& Methods)
+	{
+		void* iter = NULL;
+		MethodInfo* method;
+		do
 		{
-			EnumClassesInImage_ret Temp;
-			Temp.ptr = (UINT_PTR)mono_class_get((void*)image, MONO_TOKEN_TYPE_DEF | (i + 1));
-			if (Temp.ptr == NULL)
+			method = (MethodInfo*)il2cpp_class_get_methods(klass, &iter);
+			if (!method)
 				continue;
 
-			char* name = mono_class_get_name((void*)Temp.ptr);
-			std::string sName = name;
+			const char* name = il2cpp_method_get_name(method);
+			std::string sName = std::string(name);
 
-			if ((BYTE)name[0] == 0xEE) 
-			{
+			if ((BYTE)name[0] == 0xEE) {
 				char szUeName[32];
-				sprintf_s(szUeName, 32, "\\u%04X", UTF8TOUTF16(name));
+				sprintf_s(szUeName, 32, "\\u%04X", UTF8TOUTF16((char*)name));
+
 				sName = szUeName;
 			}
 
-			Temp.string_class = sName;
-			Temp.string_namespace = mono_class_get_namespace((void*)Temp.ptr);
-			ret.push_back(Temp);
-		}
+			Methods.push_back({ method , sName });
+		} while (method);
 	}
-}
 
-void MonoCollector::GetImageFileName(UINT_PTR image, std::string& s)
-{
-	s = mono_image_get_filename((void*)image);
-}
-
-void MonoCollector::GetImageName(UINT_PTR image,std::string& s)
-{
-	s = mono_image_get_name((void*)image);
-}
-
-int MonoCollector::SetCurrentDomain(UINT_PTR domain)
-{
-	if (mono_domain_set)
-		return mono_domain_set((void*)domain, FALSE);
-	else
-		return 0;
-}
-
-bool MonoCollector::Object_GetClass(UINT_PTR object, UINT64& r_klass, std::string& classname_p)
-{
-	char* classname;
-	void* klass;
-	try
+	DWORD MonoCollector::EnumFieldsInClass(Il2CppClass* klass, std::vector<FieldsInfo>& Fields)
 	{
-		klass = mono_object_get_class((void*)object);
-		classname = mono_class_get_name(klass);
-
-		if (klass != 0)
+		void* iter = NULL;
+		FieldInfo* field;
+		do
 		{
-			r_klass = (UINT64)klass;
-			classname_p = classname;
-		}
-		else
-		{
-			return false;
-		}
-	}
-	catch (...)
-	{
-		return false;
-	}
-}
-
-UINT_PTR MonoCollector::GetImageFromModules(UINT_PTR Module)
-{
-	return (UINT_PTR)mono_assembly_get_image((void*)Module);
-}
-
-size_t MonoCollector::EnumDomains(std::vector<UINT_PTR>& ret)
-{
-	if (il2cpp)
-	{
-		ret.push_back(UINT_PTR(mono_domain_get()));
-		return 1;
-	}
-	else
-	{
-		mono_domain_foreach((MonoDomainFunc)DomainEnumerator, &ret);
-		return ret.size();
-	}
-}
-
-size_t MonoCollector::EnumModules(std::vector<UINT_PTR>& ret)
-{
-	if (il2cpp)
-	{
-		DWORD i;
-
-		SIZE_T nrofassemblies = 0;
-		UINT_PTR* assemblies;
-		assemblies = il2cpp_domain_get_assemblies(mono_domain_get(), &nrofassemblies);
-
-		ret.clear();
-		ret.reserve(nrofassemblies);
-		for (i = 0; i < nrofassemblies; i++)
-			ret.push_back(assemblies[i]);
-		return nrofassemblies;
-	}
-	else
-	{
-		if (mono_assembly_foreach)
-		{
-			mono_assembly_foreach((GFunc)AssemblyEnumerator, &ret);
-			return ret.size();
-		}
-		else
-		{
-			return 0;
-		}
-	}
-}
-
-MonoCollector::~MonoCollector()
-{
-	mono_thread_detach(mono_selfthread);
-}
-
-MonoCollector::MonoCollector(std::string ModuleName)
-{
-	HMODULE hMono = GetModuleHandleA(ModuleName.c_str());
-
-	if (!hMono)
-	{
-		return;
-	}
-
-	if (GetProcAddress(hMono, "il2cpp_thread_attach"))
-	{
-		il2cpp = true;
-	}
-
-	if (il2cpp)
-	{
-		g_free = (G_FREE)GetProcAddress(hMono, "g_free");
-
-		if (!g_free)
-			g_free = (G_FREE)GetProcAddress(hMono, "il2cpp_unity_g_free");
-
-		if (!g_free)
-			g_free = customfreeimplementation;
-
-		mono_free = (MONO_FREE)GetProcAddress(hMono, "il2cpp_free");
-
-		mono_get_root_domain = (MONO_GET_ROOT_DOMAIN)GetProcAddress(hMono, "il2cpp_get_root_domain");
-		mono_thread_attach = (MONO_THREAD_ATTACH)GetProcAddress(hMono, "il2cpp_thread_attach");
-		mono_thread_detach = (MONO_THREAD_DETACH)GetProcAddress(hMono, "il2cpp_thread_detach");
-
-		mono_object_get_class = (MONO_OBJECT_GET_CLASS)GetProcAddress(hMono, "il2cpp_object_get_class");
-
-		mono_domain_foreach = (MONO_DOMAIN_FOREACH)GetProcAddress(hMono, "il2cpp_domain_foreach");
-		mono_domain_set = (MONO_DOMAIN_SET)GetProcAddress(hMono, "il2cpp_domain_set");
-		mono_domain_get = (MONO_DOMAIN_GET)GetProcAddress(hMono, "il2cpp_domain_get");
-		mono_assembly_foreach = (MONO_ASSEMBLY_FOREACH)GetProcAddress(hMono, "il2cpp_assembly_foreach");
-		mono_assembly_get_image = (MONO_ASSEMBLY_GET_IMAGE)GetProcAddress(hMono, "il2cpp_assembly_get_image");
-		mono_image_get_assembly = (MONO_IMAGE_GET_ASSEMBLY)GetProcAddress(hMono, "il2cpp_image_get_assembly");
-
-		mono_image_get_name = (MONO_IMAGE_GET_NAME)GetProcAddress(hMono, "il2cpp_image_get_name");
-		mono_image_get_table_info = (MONO_IMAGE_GET_TABLE_INFO)GetProcAddress(hMono, "mono_image_get_table_info");
-		mono_image_rva_map = (MONO_IMAGE_RVA_MAP)GetProcAddress(hMono, "il2cpp_image_rva_map");
-
-		mono_table_info_get_rows = (MONO_TABLE_INFO_GET_ROWS)GetProcAddress(hMono, "il2cpp_table_info_get_rows");
-		mono_metadata_decode_row_col = (MONO_METADATA_DECODE_ROW_COL)GetProcAddress(hMono, "il2cpp_metadata_decode_row_col");
-		mono_metadata_string_heap = (MONO_METADATA_STRING_HEAP)GetProcAddress(hMono, "il2cpp_metadata_string_heap");
-
-
-		mono_class_get = (MONO_CLASS_GET)GetProcAddress(hMono, "il2cpp_class_get");
-		mono_class_from_typeref = (MONO_CLASS_FROM_TYPEREF)GetProcAddress(hMono, "il2cpp_class_from_typeref");
-		mono_class_name_from_token = (MONO_CLASS_NAME_FROM_TOKEN)GetProcAddress(hMono, "il2cpp_class_name_from_token");
-		mono_class_from_name_case = (MONO_CLASS_FROM_NAME_CASE)GetProcAddress(hMono, "il2cpp_class_from_name_case");
-		mono_class_from_name = (MONO_CLASS_FROM_NAME_CASE)GetProcAddress(hMono, "il2cpp_class_from_name");
-		mono_class_get_name = (MONO_CLASS_GET_NAME)GetProcAddress(hMono, "il2cpp_class_get_name");
-		mono_class_get_namespace = (MONO_CLASS_GET_NAMESPACE)GetProcAddress(hMono, "il2cpp_class_get_namespace");
-		mono_class_get_methods = (MONO_CLASS_GET_METHODS)GetProcAddress(hMono, "il2cpp_class_get_methods");
-		mono_class_get_method_from_name = (MONO_CLASS_GET_METHOD_FROM_NAME)GetProcAddress(hMono, "il2cpp_class_get_method_from_name");
-		mono_class_get_fields = (MONO_CLASS_GET_FIELDS)GetProcAddress(hMono, "il2cpp_class_get_fields");
-		mono_class_get_parent = (MONO_CLASS_GET_PARENT)GetProcAddress(hMono, "il2cpp_class_get_parent");
-		mono_class_get_image = (MONO_CLASS_GET_IMAGE)GetProcAddress(hMono, "il2cpp_class_get_image");
-
-		mono_class_is_generic = (MONO_CLASS_IS_GENERIC)GetProcAddress(hMono, "il2cpp_class_is_generic");
-		mono_class_vtable = (MONO_CLASS_VTABLE)GetProcAddress(hMono, "il2cpp_class_vtable");
-		mono_class_from_mono_type = (MONO_CLASS_FROM_MONO_TYPE)GetProcAddress(hMono, "il2cpp_class_from_mono_type");
-		mono_class_get_element_class = (MONO_CLASS_GET_ELEMENT_CLASS)GetProcAddress(hMono, "il2cpp_class_get_element_class");
-		mono_class_instance_size = (MONO_CLASS_INSTANCE_SIZE)GetProcAddress(hMono, "il2cpp_class_instance_size");
-
-		mono_class_num_fields = (MONO_CLASS_NUM_FIELDS)GetProcAddress(hMono, "il2cpp_class_num_fields");
-		mono_class_num_methods = (MONO_CLASS_NUM_METHODS)GetProcAddress(hMono, "il2cpp_class_num_methods");
-
-
-		mono_field_get_name = (MONO_FIELD_GET_NAME)GetProcAddress(hMono, "il2cpp_field_get_name");
-		mono_field_get_type = (MONO_FIELD_GET_TYPE)GetProcAddress(hMono, "il2cpp_field_get_type");
-		mono_field_get_parent = (MONO_FIELD_GET_PARENT)GetProcAddress(hMono, "il2cpp_field_get_parent");
-		mono_field_get_offset = (MONO_FIELD_GET_OFFSET)GetProcAddress(hMono, "il2cpp_field_get_offset");
-		mono_field_get_flags = (MONO_FIELD_GET_FLAGS)GetProcAddress(hMono, "il2cpp_field_get_flags");
-
-		mono_type_get_name = (MONO_TYPE_GET_NAME)GetProcAddress(hMono, "il2cpp_type_get_name");
-		mono_type_get_type = (MONO_TYPE_GET_TYPE)GetProcAddress(hMono, "il2cpp_type_get_type");
-		mono_type_get_name_full = (MONO_TYPE_GET_NAME_FULL)GetProcAddress(hMono, "il2cpp_type_get_name_full");
-
-		mono_method_get_name = (MONO_METHOD_GET_NAME)GetProcAddress(hMono, "il2cpp_method_get_name");
-		mono_method_get_class = (MONO_METHOD_GET_CLASS)GetProcAddress(hMono, "il2cpp_method_get_class");
-		mono_method_get_header = (MONO_METHOD_GET_HEADER)GetProcAddress(hMono, "il2cpp_method_get_header");
-		mono_method_get_flags = (MONO_METHOD_GET_FLAGS)GetProcAddress(hMono, "il2cpp_method_get_flags");
-		mono_method_signature = (MONO_METHOD_SIG)GetProcAddress(hMono, "il2cpp_method_signature");
-		mono_method_get_param_names = (MONO_METHOD_GET_PARAM_NAMES)GetProcAddress(hMono, "il2cpp_method_get_param_names");
-
-
-
-		mono_signature_get_desc = (MONO_SIGNATURE_GET_DESC)GetProcAddress(hMono, "il2cpp_signature_get_desc");
-		mono_signature_get_params = (MONO_SIGNATURE_GET_PARAMS)GetProcAddress(hMono, "il2cpp_signature_get_params");
-		mono_signature_get_param_count = (MONO_SIGNATURE_GET_PARAM_COUNT)GetProcAddress(hMono, "il2cpp_signature_get_param_count");
-		mono_signature_get_return_type = (MONO_SIGNATURE_GET_RETURN_TYPE)GetProcAddress(hMono, "il2cpp_signature_get_return_type");
-
-
-
-		mono_compile_method = (MONO_COMPILE_METHOD)GetProcAddress(hMono, "il2cpp_compile_method");
-		mono_free_method = (MONO_FREE_METHOD)GetProcAddress(hMono, "il2cpp_free_method");
-		mono_jit_info_table_find = (MONO_JIT_INFO_TABLE_FIND)GetProcAddress(hMono, "il2cpp_jit_info_table_find");
-		mono_jit_info_get_method = (MONO_JIT_INFO_GET_METHOD)GetProcAddress(hMono, "il2cpp_jit_info_get_method");
-		mono_jit_info_get_code_start = (MONO_JIT_INFO_GET_CODE_START)GetProcAddress(hMono, "il2cpp_jit_info_get_code_start");
-		mono_jit_info_get_code_size = (MONO_JIT_INFO_GET_CODE_SIZE)GetProcAddress(hMono, "il2cpp_jit_info_get_code_size");
-		mono_jit_exec = (MONO_JIT_EXEC)GetProcAddress(hMono, "il2cpp_jit_exec");
-
-		mono_method_header_get_code = (MONO_METHOD_HEADER_GET_CODE)GetProcAddress(hMono, "il2cpp_method_header_get_code");
-		mono_disasm_code = (MONO_DISASM_CODE)GetProcAddress(hMono, "il2cpp_disasm_code");
-
-		mono_vtable_get_static_field_data = (MONO_VTABLE_GET_STATIC_FIELD_DATA)GetProcAddress(hMono, "il2cpp_vtable_get_static_field_data");
-
-		mono_method_desc_new = (MONO_METHOD_DESC_NEW)GetProcAddress(hMono, "il2cpp_method_desc_new");;
-		mono_method_desc_from_method = (MONO_METHOD_DESC_FROM_METHOD)GetProcAddress(hMono, "il2cpp_method_desc_from_method");;
-		mono_method_desc_free = (MONO_METHOD_DESC_FREE)GetProcAddress(hMono, "il2cpp_method_desc_free");;
-
-		mono_string_new = (MONO_STRING_NEW)GetProcAddress(hMono, "il2cpp_string_new");
-		mono_string_to_utf8 = (MONO_STRING_TO_UTF8)GetProcAddress(hMono, "il2cpp_string_to_utf8");
-		mono_array_new = (MONO_ARRAY_NEW)GetProcAddress(hMono, "il2cpp_array_new");
-		mono_value_box = (MONO_VALUE_BOX)GetProcAddress(hMono, "il2cpp_value_box");
-		mono_object_unbox = (MONO_OBJECT_UNBOX)GetProcAddress(hMono, "il2cpp_object_unbox");
-		mono_object_new = (MONO_OBJECT_NEW)GetProcAddress(hMono, "il2cpp_object_new");
-
-		mono_class_get_type = (MONO_CLASS_GET_TYPE)GetProcAddress(hMono, "il2cpp_class_get_type");
-
-		mono_method_desc_search_in_image = (MONO_METHOD_DESC_SEARCH_IN_IMAGE)GetProcAddress(hMono, "il2cpp_method_desc_search_in_image");
-		mono_runtime_invoke = (MONO_RUNTIME_INVOKE)GetProcAddress(hMono, "il2cpp_runtime_invoke");
-		mono_runtime_object_init = (MONO_RUNTIME_OBJECT_INIT)GetProcAddress(hMono, "il2cpp_runtime_object_init");
-
-
-		mono_assembly_name_new = (MONO_ASSEMBLY_NAME_NEW)GetProcAddress(hMono, "il2cpp_assembly_name_new");
-		mono_assembly_loaded = (MONO_ASSEMBLY_LOADED)GetProcAddress(hMono, "il2cpp_assembly_loaded");
-		mono_assembly_open = (MONO_ASSEMBLY_OPEN)GetProcAddress(hMono, "il2cpp_assembly_open");
-		mono_image_open = (MONO_IMAGE_OPEN)GetProcAddress(hMono, "il2cpp_image_open");
-		mono_image_get_filename = (MONO_IMAGE_GET_FILENAME)GetProcAddress(hMono, "il2cpp_image_get_filename");
-
-		mono_class_get_nesting_type = (MONO_CLASS_GET_NESTING_TYPE)GetProcAddress(hMono, "mono_class_get_nesting_type");
-
-		il2cpp_field_static_get_value = (IL2CPP_FIELD_STATIC_GET_VALUE)GetProcAddress(hMono, "il2cpp_field_static_get_value");
-		il2cpp_field_static_set_value = (IL2CPP_FIELD_STATIC_SET_VALUE)GetProcAddress(hMono, "il2cpp_field_static_set_value");
-
-
-		il2cpp_domain_get_assemblies = (IL2CPP_DOMAIN_GET_ASSEMBLIES)GetProcAddress(hMono, "il2cpp_domain_get_assemblies");
-		il2cpp_image_get_class_count = (IL2CPP_IMAGE_GET_CLASS_COUNT)GetProcAddress(hMono, "il2cpp_image_get_class_count");
-		il2cpp_image_get_class = (IL2CPP_IMAGE_GET_CLASS)GetProcAddress(hMono, "il2cpp_image_get_class");
-
-		il2cpp_type_get_name = (IL2CPP_TYPE_GET_NAME)GetProcAddress(hMono, "il2cpp_type_get_name");
-		il2cpp_type_get_assembly_qualified_name = (IL2CPP_TYPE_GET_ASSEMBLY_QUALIFIED_NAME)GetProcAddress(hMono, "il2cpp_type_get_assembly_qualified_name");
-
-		il2cpp_method_get_param_count = (IL2CPP_METHOD_GET_PARAM_COUNT)GetProcAddress(hMono, "il2cpp_method_get_param_count");
-		il2cpp_method_get_param_name = (IL2CPP_METHOD_GET_PARAM_NAME)GetProcAddress(hMono, "il2cpp_method_get_param_name");
-		il2cpp_method_get_param = (IL2CPP_METHOD_GET_PARAM)GetProcAddress(hMono, "il2cpp_method_get_param");
-		il2cpp_method_get_return_type = (IL2CPP_METHOD_GET_RETURN_TYPE)GetProcAddress(hMono, "il2cpp_method_get_return_type");
-
-		il2cpp_class_from_type = (IL2CPP_CLASS_FROM_TYPE)GetProcAddress(hMono, "il2cpp_class_from_type");
-		il2cpp_string_chars = (IL2CPP_STRING_CHARS)GetProcAddress(hMono, "il2cpp_string_chars");
-
-		mono_runtime_is_shutting_down = (MONO_RUNTIME_IS_SHUTTING_DOWN)GetProcAddress(hMono, "il2cpp_runtime_is_shutting_down");  //doesn't seem to exist in il2cpp....
-
-		mono_runtime_is_shutting_down = (MONO_RUNTIME_IS_SHUTTING_DOWN)GetProcAddress(hMono, "mono_runtime_is_shutting_down"); //some do, with this name...
-		domain = mono_domain_get();
-
-	}
-	else
-	{
-		g_free = (G_FREE)GetProcAddress(hMono, "g_free");
-
-		if (!g_free)
-			g_free = (G_FREE)GetProcAddress(hMono, "mono_unity_g_free");
-
-		if (!g_free)
-			g_free = customfreeimplementation;
-
-		mono_free = (MONO_FREE)GetProcAddress(hMono, "mono_free");
-
-		mono_get_root_domain = (MONO_GET_ROOT_DOMAIN)GetProcAddress(hMono, "mono_get_root_domain");
-		mono_thread_attach = (MONO_THREAD_ATTACH)GetProcAddress(hMono, "mono_thread_attach");
-		mono_thread_detach = (MONO_THREAD_DETACH)GetProcAddress(hMono, "mono_thread_detach");
-		mono_thread_cleanup = (MONO_THREAD_CLEANUP)GetProcAddress(hMono, "mono_thread_cleanup");
-
-		mono_object_get_class = (MONO_OBJECT_GET_CLASS)GetProcAddress(hMono, "mono_object_get_class");
-
-		mono_domain_foreach = (MONO_DOMAIN_FOREACH)GetProcAddress(hMono, "mono_domain_foreach");
-		mono_domain_set = (MONO_DOMAIN_SET)GetProcAddress(hMono, "mono_domain_set");
-		mono_domain_get = (MONO_DOMAIN_GET)GetProcAddress(hMono, "mono_domain_get");
-		mono_assembly_foreach = (MONO_ASSEMBLY_FOREACH)GetProcAddress(hMono, "mono_assembly_foreach");
-		mono_assembly_get_image = (MONO_ASSEMBLY_GET_IMAGE)GetProcAddress(hMono, "mono_assembly_get_image");
-		mono_image_get_assembly = (MONO_IMAGE_GET_ASSEMBLY)GetProcAddress(hMono, "mono_image_get_assembly");
-
-		mono_image_get_name = (MONO_IMAGE_GET_NAME)GetProcAddress(hMono, "mono_image_get_name");
-		mono_image_get_filename = (MONO_IMAGE_GET_FILENAME)GetProcAddress(hMono, "mono_image_get_filename");
-
-		mono_image_get_table_info = (MONO_IMAGE_GET_TABLE_INFO)GetProcAddress(hMono, "mono_image_get_table_info");
-		mono_image_rva_map = (MONO_IMAGE_RVA_MAP)GetProcAddress(hMono, "mono_image_rva_map");
-
-		mono_table_info_get_rows = (MONO_TABLE_INFO_GET_ROWS)GetProcAddress(hMono, "mono_table_info_get_rows");
-		mono_metadata_decode_row_col = (MONO_METADATA_DECODE_ROW_COL)GetProcAddress(hMono, "mono_metadata_decode_row_col");
-		mono_metadata_string_heap = (MONO_METADATA_STRING_HEAP)GetProcAddress(hMono, "mono_metadata_string_heap");
-
-
-		mono_class_get = (MONO_CLASS_GET)GetProcAddress(hMono, "mono_class_get");
-		mono_class_from_typeref = (MONO_CLASS_FROM_TYPEREF)GetProcAddress(hMono, "mono_class_from_typeref");
-		mono_class_name_from_token = (MONO_CLASS_NAME_FROM_TOKEN)GetProcAddress(hMono, "mono_class_name_from_token");
-		mono_class_from_name_case = (MONO_CLASS_FROM_NAME_CASE)GetProcAddress(hMono, "mono_class_from_name_case");
-		mono_class_from_name = (MONO_CLASS_FROM_NAME_CASE)GetProcAddress(hMono, "mono_class_from_name");
-		mono_class_get_name = (MONO_CLASS_GET_NAME)GetProcAddress(hMono, "mono_class_get_name");
-		mono_class_get_namespace = (MONO_CLASS_GET_NAMESPACE)GetProcAddress(hMono, "mono_class_get_namespace");
-		mono_class_get_methods = (MONO_CLASS_GET_METHODS)GetProcAddress(hMono, "mono_class_get_methods");
-		mono_class_get_method_from_name = (MONO_CLASS_GET_METHOD_FROM_NAME)GetProcAddress(hMono, "mono_class_get_method_from_name");
-		mono_class_get_fields = (MONO_CLASS_GET_FIELDS)GetProcAddress(hMono, "mono_class_get_fields");
-		mono_class_get_parent = (MONO_CLASS_GET_PARENT)GetProcAddress(hMono, "mono_class_get_parent");
-		mono_class_get_image = (MONO_CLASS_GET_IMAGE)GetProcAddress(hMono, "mono_class_get_image");
-		mono_class_is_generic = (MONO_CLASS_IS_GENERIC)GetProcAddress(hMono, "mono_class_is_generic");
-		mono_class_vtable = (MONO_CLASS_VTABLE)GetProcAddress(hMono, "mono_class_vtable");
-		mono_class_from_mono_type = (MONO_CLASS_FROM_MONO_TYPE)GetProcAddress(hMono, "mono_class_from_mono_type");
-		mono_class_get_element_class = (MONO_CLASS_GET_ELEMENT_CLASS)GetProcAddress(hMono, "mono_class_get_element_class");
-		mono_class_instance_size = (MONO_CLASS_INSTANCE_SIZE)GetProcAddress(hMono, "mono_class_instance_size");
-
-		mono_class_num_fields = (MONO_CLASS_NUM_FIELDS)GetProcAddress(hMono, "mono_class_num_fields");
-		mono_class_num_methods = (MONO_CLASS_NUM_METHODS)GetProcAddress(hMono, "mono_class_num_methods");
-
-
-		mono_field_get_name = (MONO_FIELD_GET_NAME)GetProcAddress(hMono, "mono_field_get_name");
-		mono_field_get_type = (MONO_FIELD_GET_TYPE)GetProcAddress(hMono, "mono_field_get_type");
-		mono_field_get_parent = (MONO_FIELD_GET_PARENT)GetProcAddress(hMono, "mono_field_get_parent");
-		mono_field_get_offset = (MONO_FIELD_GET_OFFSET)GetProcAddress(hMono, "mono_field_get_offset");
-		mono_field_get_flags = (MONO_FIELD_GET_FLAGS)GetProcAddress(hMono, "mono_field_get_flags");
-
-		mono_type_get_name = (MONO_TYPE_GET_NAME)GetProcAddress(hMono, "mono_type_get_name");
-		mono_type_get_type = (MONO_TYPE_GET_TYPE)GetProcAddress(hMono, "mono_type_get_type");
-		mono_type_get_name_full = (MONO_TYPE_GET_NAME_FULL)GetProcAddress(hMono, "mono_type_get_name_full");
-
-		mono_method_get_name = (MONO_METHOD_GET_NAME)GetProcAddress(hMono, "mono_method_get_name");
-		mono_method_get_class = (MONO_METHOD_GET_CLASS)GetProcAddress(hMono, "mono_method_get_class");
-		mono_method_get_header = (MONO_METHOD_GET_HEADER)GetProcAddress(hMono, "mono_method_get_header");
-		mono_method_get_flags = (MONO_METHOD_GET_FLAGS)GetProcAddress(hMono, "mono_method_get_flags");
-		mono_method_signature = (MONO_METHOD_SIG)GetProcAddress(hMono, "mono_method_signature");
-		mono_method_get_param_names = (MONO_METHOD_GET_PARAM_NAMES)GetProcAddress(hMono, "mono_method_get_param_names");
-
-
-
-		mono_signature_get_desc = (MONO_SIGNATURE_GET_DESC)GetProcAddress(hMono, "mono_signature_get_desc");
-		mono_signature_get_params = (MONO_SIGNATURE_GET_PARAMS)GetProcAddress(hMono, "mono_signature_get_params");
-		mono_signature_get_param_count = (MONO_SIGNATURE_GET_PARAM_COUNT)GetProcAddress(hMono, "mono_signature_get_param_count");
-		mono_signature_get_return_type = (MONO_SIGNATURE_GET_RETURN_TYPE)GetProcAddress(hMono, "mono_signature_get_return_type");
-
-
-
-		mono_compile_method = (MONO_COMPILE_METHOD)GetProcAddress(hMono, "mono_compile_method");
-		mono_free_method = (MONO_FREE_METHOD)GetProcAddress(hMono, "mono_free_method");
-		mono_jit_info_table_find = (MONO_JIT_INFO_TABLE_FIND)GetProcAddress(hMono, "mono_jit_info_table_find");
-		mono_jit_info_get_method = (MONO_JIT_INFO_GET_METHOD)GetProcAddress(hMono, "mono_jit_info_get_method");
-		mono_jit_info_get_code_start = (MONO_JIT_INFO_GET_CODE_START)GetProcAddress(hMono, "mono_jit_info_get_code_start");
-		mono_jit_info_get_code_size = (MONO_JIT_INFO_GET_CODE_SIZE)GetProcAddress(hMono, "mono_jit_info_get_code_size");
-		mono_jit_exec = (MONO_JIT_EXEC)GetProcAddress(hMono, "mono_jit_exec");
-
-		mono_method_header_get_code = (MONO_METHOD_HEADER_GET_CODE)GetProcAddress(hMono, "mono_method_header_get_code");
-		mono_disasm_code = (MONO_DISASM_CODE)GetProcAddress(hMono, "mono_disasm_code");
-
-		mono_vtable_get_static_field_data = (MONO_VTABLE_GET_STATIC_FIELD_DATA)GetProcAddress(hMono, "mono_vtable_get_static_field_data");
-
-		mono_method_desc_new = (MONO_METHOD_DESC_NEW)GetProcAddress(hMono, "mono_method_desc_new");;
-		mono_method_desc_from_method = (MONO_METHOD_DESC_FROM_METHOD)GetProcAddress(hMono, "mono_method_desc_from_method");;
-		mono_method_desc_free = (MONO_METHOD_DESC_FREE)GetProcAddress(hMono, "mono_method_desc_free");;
-
-		mono_string_new = (MONO_STRING_NEW)GetProcAddress(hMono, "mono_string_new");
-		mono_string_to_utf8 = (MONO_STRING_TO_UTF8)GetProcAddress(hMono, "mono_string_to_utf8");
-		mono_array_new = (MONO_ARRAY_NEW)GetProcAddress(hMono, "mono_array_new");
-		mono_value_box = (MONO_VALUE_BOX)GetProcAddress(hMono, "mono_value_box");
-		mono_object_unbox = (MONO_OBJECT_UNBOX)GetProcAddress(hMono, "mono_object_unbox");
-		mono_object_new = (MONO_OBJECT_NEW)GetProcAddress(hMono, "mono_object_new");
-
-		mono_class_get_type = (MONO_CLASS_GET_TYPE)GetProcAddress(hMono, "mono_class_get_type");
-		mono_class_get_nesting_type = (MONO_CLASS_GET_NESTING_TYPE)GetProcAddress(hMono, "mono_class_get_nesting_type");
-
-		mono_method_desc_search_in_image = (MONO_METHOD_DESC_SEARCH_IN_IMAGE)GetProcAddress(hMono, "mono_method_desc_search_in_image");
-		mono_runtime_invoke = (MONO_RUNTIME_INVOKE)GetProcAddress(hMono, "mono_runtime_invoke");
-		mono_runtime_object_init = (MONO_RUNTIME_OBJECT_INIT)GetProcAddress(hMono, "mono_runtime_object_init");
-
-
-		mono_assembly_name_new = (MONO_ASSEMBLY_NAME_NEW)GetProcAddress(hMono, "mono_assembly_name_new");
-		mono_assembly_loaded = (MONO_ASSEMBLY_LOADED)GetProcAddress(hMono, "mono_assembly_loaded");
-		mono_assembly_open = (MONO_ASSEMBLY_OPEN)GetProcAddress(hMono, "mono_assembly_open");
-		mono_image_open = (MONO_IMAGE_OPEN)GetProcAddress(hMono, "mono_image_open");
-
-		mono_field_static_get_value = (MONO_FIELD_STATIC_GET_VALUE)GetProcAddress(hMono, "mono_field_static_get_value");
-		mono_field_static_set_value = (MONO_FIELD_STATIC_SET_VALUE)GetProcAddress(hMono, "mono_field_static_set_value");
-
-		mono_runtime_is_shutting_down = (MONO_RUNTIME_IS_SHUTTING_DOWN)GetProcAddress(hMono, "mono_runtime_is_shutting_down");
-		domain = mono_get_root_domain();
-
-		mono_selfthread = NULL;
-
-		if (mono_thread_attach)
-		{
-
-			if (il2cpp)
-				mono_selfthread = mono_thread_attach(mono_domain_get());
-			else
-			{
-				if (mono_get_root_domain)
-				{
-					void* domain = mono_get_root_domain();
-					mono_selfthread = mono_thread_attach(domain);
-				}
+			field = il2cpp_class_get_fields(klass, &iter);
+			if (!field)
+				continue;
+			Il2CppType* fieldtype = (Il2CppType*)il2cpp_field_get_type(field);
+
+			const char* name = il2cpp_field_get_name(field);
+			const char* type = il2cpp_type_get_name(fieldtype);
+			std::string sName = std::string(name);
+			std::string sType = std::string(type);
+
+			if ((BYTE)name[0] == 0xEE) {
+				char szUeName[32];
+				sprintf_s(szUeName, 32, "\\u%04X", UTF8TOUTF16((char*)name));
+				sName = szUeName;
 			}
+			if ((BYTE)type[0] == 0xEE) {
+				char szUeName[32];
+				sprintf_s(szUeName, 32, "\\u%04X", UTF8TOUTF16((char*)type));
+				sType = szUeName;
+			}
+			Fields.push_back({ field , sName ,sType });
+		} while (field);
+	}
+
+	DWORD MonoCollector::EnumClassesInImage(Il2CppImage* Image, std::vector<ClassInfo>& Classes)
+	{
+		if (!Image) return 0;
+		if (il2cpp)
+		{
+			DWORD count = il2cpp_image_get_class_count(Image);
+			Classes.reserve(count);
+			for (DWORD i = 0; i < count; i++)
+			{
+				Il2CppClass* Class = (Il2CppClass*)il2cpp_image_get_class(Image, i);
+				if (!Class) continue;
+				std::string Name = il2cpp_class_get_name(Class);
+				std::string Name_space = il2cpp_class_get_namespace(Class);
+				Classes.push_back({ Class , Name , Name_space });
+			}
+			return Classes.size();
+		}
+		else
+		{
+			
 		}
 	}
+
+	std::string MonoCollector::GetImageName(Il2CppImage* Image)
+	{
+		return il2cpp_image_get_name(Image);
+	}
+
+	std::string MonoCollector::GetImageFile(Il2CppImage* Image)
+	{
+		return il2cpp_image_get_filename(Image);
+	}
+
+	Il2CppImage* MonoCollector::GetImageInAssembly(Il2CppAssembly* Assembly)
+	{
+		return (Il2CppImage*)il2cpp_assembly_get_image(Assembly);
+	}
+
+	DWORD MonoCollector::EnumDomains(std::vector<Il2CppDomain*>& Domains)
+	{
+		if (il2cpp)
+		{
+			Domains.push_back(il2cpp_domain_get());
+			return Domains.size();
+		}
+		else
+		{
+			
+		}
+	}
+
+	DWORD MonoCollector::EnummAssembly(std::vector<Il2CppAssembly*>& Assemblys)
+	{
+		if (il2cpp)
+		{
+			SIZE_T nrofassemblies = 0;
+			 Il2CppAssembly** assemblies = (Il2CppAssembly**)il2cpp_domain_get_assemblies(il2cpp_domain_get(), &nrofassemblies);
+
+			for (int i = 0; i < nrofassemblies; i++)
+				Assemblys.push_back(assemblies[i]);
+			return Assemblys.size();
+		}
+		else
+		{
 		
+		}
+	}
 }

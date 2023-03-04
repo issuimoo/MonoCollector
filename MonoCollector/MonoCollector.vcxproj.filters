@@ -29,7 +29,7 @@
     <ClInclude Include="MonoCollector.hpp">
       <Filter>MonoCollector</Filter>
     </ClInclude>
-    <ClInclude Include="MonoData.hpp">
+    <ClInclude Include="il2cpp-api-types.h">
       <Filter>MonoCollector</Filter>
     </ClInclude>
   </ItemGroup>
