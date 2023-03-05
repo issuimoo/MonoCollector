@@ -48,17 +48,19 @@ namespace Untiy3D
 			std::string name;
 		};
 
-		DWORD EnummAssembly(std::vector<Il2CppAssembly*>& Assemblys);
-		DWORD EnumDomains(std::vector<Il2CppDomain*>& Domains);
-		Il2CppImage* GetImageInAssembly(Il2CppAssembly* Assembly);
-		std::string GetImageName(Il2CppImage* Image);
-		std::string GetImageFile(Il2CppImage* Image);
-		DWORD EnumClassesInImage(Il2CppImage* Image, std::vector<ClassInfo>& Classes);
-		DWORD EnumFieldsInClass(Il2CppClass* klass, std::vector<FieldsInfo>& Fields);
-		DWORD EnumMethodsInClass(Il2CppClass* klass, std::vector<MethodsInfo>& Methods);
-		FieldInfo* GetClassFieldFromName(Il2CppClass* klass, std::string name);
-		DWORD_PTR GetFieldStatic(FieldInfo* field);
-		Il2CppClass* GetImageClassFromName(Il2CppImage* image, std::string name, std::string namespaze = "");
+		DWORD il2cpp_EnummAssembly(std::vector<Il2CppAssembly*>& Assemblys);
+		DWORD il2cpp_EnumDomains(std::vector<Il2CppDomain*>& Domains);
+		Il2CppImage* il2cpp_GetImageInAssembly(Il2CppAssembly* Assembly);
+		std::string il2cpp_GetImageName(Il2CppImage* Image);
+		std::string il2cpp_GetImageFile(Il2CppImage* Image);
+		DWORD il2cpp_EnumClassesInImage(Il2CppImage* Image, std::vector<ClassInfo>& Classes);
+		DWORD il2cpp_EnumFieldsInClass(Il2CppClass* klass, std::vector<FieldsInfo>& Fields);
+		DWORD il2cpp_EnumMethodsInClass(Il2CppClass* klass, std::vector<MethodsInfo>& Methods);
+		FieldInfo* il2cpp_GetClassFieldFromName(Il2CppClass* klass, std::string name);
+		DWORD_PTR il2cpp_GetFieldStatic(FieldInfo* field);
+		Il2CppClass* il2cpp_GetImageClassFromName(Il2CppImage* image, std::string name, std::string namespaze = "");
+		std::string il2cpp_GetImageClassName(Il2CppClass* klass);
+		std::string il2cpp_GetClassFieldName(FieldInfo* field);
 
 	private:
 		void GetMonoFunc();
