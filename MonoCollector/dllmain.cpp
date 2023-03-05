@@ -24,26 +24,25 @@ void Th()
 {
 	system("pause");
 	Untiy3D::MonoCollector* Mono = new Untiy3D::MonoCollector("GameAssembly.dll");
-
 	StartConsole("",true);
 
 	std::vector<Il2CppAssembly*> Assemblys;
-	std::cout << "size:" << Mono->EnummAssembly(Assemblys) << std::endl;
+	std::cout << "size:" << Mono->il2cpp_EnummAssembly(Assemblys) << std::endl;
 	for (size_t i = 0,max = Assemblys.size(); i < max; i++)
 	{
-		Il2CppImage* image = Mono->GetImageInAssembly(Assemblys[i]);
-		std::string imagename = Mono->GetImageName(image);
+		Il2CppImage* image = Mono->il2cpp_GetImage(Assemblys[i]);
+		std::string imagename = Mono->il2cpp_GetImageName(image);
 		if (imagename == "Assembly-CSharp.dll")
 		{
-			std::vector<Untiy3D::MonoCollector::ClassInfo> Class;
-			Mono->EnumClassesInImage(image, Class);
+			std::vector<Il2CppClass*> Class;
+			Mono->il2cpp_EnumClasses(image, Class);
 			for (size_t iw = 0, max = Class.size(); iw < max; iw++)
 			{
-				std::vector<Untiy3D::MonoCollector::FieldsInfo> Fields;
-				Mono->EnumFieldsInClass(Class[i].ptr, Fields);
+				std::vector<FieldInfo*> Fields;
+				Mono->il2cpp_EnumFields(Class[i], Fields);
 				for (size_t iq = 0, max = Fields.size(); iq < max; iq++)
 				{
-					std::cout << std::format("[{}][{}] {}({})", imagename, Class[iw].name, Fields[iq].name, Fields[iq].name_type) << std::endl;
+					std::cout << std::format("[{}][{}] {}({})", imagename, Mono->il2cpp_GetClassName(Class[iw]), Mono->il2cpp_GetFieldName(Fields[iq]), Mono->il2cpp_GetTypeName(Mono->il2cpp_GetFieldType(Fields[iq]))) << std::endl;
 				}
 			}
 		}

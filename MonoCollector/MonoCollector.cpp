@@ -60,17 +60,67 @@ namespace Untiy3D
 		#undef DO_API
 	}
 
-	std::string MonoCollector::il2cpp_GetClassFieldName(FieldInfo* field)
+	MethodInfo* MonoCollector::il2cpp_GetMethodFromName(Il2CppClass* klass, std::string name)
+	{
+		return (MethodInfo*)il2cpp_class_get_method_from_name(klass, name.c_str());
+	}
+
+	Il2CppType* MonoCollector::il2cpp_GetMethodParam(MethodInfo* Method, DWORD index)
+	{
+		return (Il2CppType*)il2cpp_method_get_param(Method, index);
+	}
+
+	std::string MonoCollector::il2cpp_GetMethodParamName(MethodInfo* Method, DWORD index)
+	{
+		return il2cpp_method_get_param_name(Method, index);
+	}
+
+	DWORD MonoCollector::il2cpp_GetMethodParamCount(MethodInfo* Method)
+	{
+		return il2cpp_method_get_param_count(Method);
+	}
+
+	Il2CppType* MonoCollector::il2cpp_GetMethodRetType(MethodInfo* Method)
+	{
+		return (Il2CppType*)il2cpp_method_get_return_type(Method);
+	}
+
+	std::string MonoCollector::il2cpp_GetMethodName(MethodInfo* Method)
+	{
+		return il2cpp_method_get_name(Method);
+	}
+
+	std::string MonoCollector::il2cpp_GetClassNamespace(Il2CppClass* klass)
+	{
+		return il2cpp_class_get_namespace(klass);
+	}
+
+	DWORD MonoCollector::il2cpp_GetClassCount(Il2CppImage* Image)
+	{
+		return il2cpp_image_get_class_count(Image);
+	}
+
+	Il2CppType* MonoCollector::il2cpp_GetFieldType(FieldInfo* field)
+	{
+		return (Il2CppType*)il2cpp_field_get_type(field);
+	}
+
+	std::string MonoCollector::il2cpp_GetTypeName(Il2CppType* type)
+	{
+		return il2cpp_type_get_name(type);
+	}
+
+	std::string MonoCollector::il2cpp_GetFieldName(FieldInfo* field)
 	{
 		return il2cpp_field_get_name(field);
 	}
 
-	std::string MonoCollector::il2cpp_GetImageClassName(Il2CppClass* klass)
+	std::string MonoCollector::il2cpp_GetClassName(Il2CppClass* klass)
 	{
 		return il2cpp_class_get_name(klass);
 	}
 
-	Il2CppClass* MonoCollector::il2cpp_GetImageClassFromName(Il2CppImage* image, std::string name, std::string namespaze = "")
+	Il2CppClass* MonoCollector::il2cpp_GetClassFromName(Il2CppImage* image, std::string name, std::string namespaze)
 	{
 		return il2cpp_class_from_name(image, name.c_str(), namespaze.c_str());
 	}
@@ -82,62 +132,48 @@ namespace Untiy3D
 		return (DWORD_PTR)val;
 	}
 
-	FieldInfo* MonoCollector::il2cpp_GetClassFieldFromName(Il2CppClass* klass, std::string name)
+	FieldInfo* MonoCollector::il2cpp_GetFieldFromName(Il2CppClass* klass, std::string name)
 	{
 		return il2cpp_class_get_field_from_name(klass, name.c_str());
 	}
 
-	DWORD MonoCollector::il2cpp_EnumMethodsInClass(Il2CppClass* klass, std::vector<MethodsInfo>& Methods)
+	DWORD MonoCollector::il2cpp_EnumMethods(Il2CppClass* klass, std::vector<MethodInfo*>& Methods)
 	{
 		void* iter = NULL;
 		MethodInfo* method;
 		do
 		{
 			method = (MethodInfo*)il2cpp_class_get_methods(klass, &iter);
-			if (!method)
-				continue;
-			std::string sName = il2cpp_method_get_name(method);
-			Methods.push_back({ method , sName });
+			if (!method) continue;
+			Methods.push_back(method);
 		} while (method);
+		return Methods.size();
 	}
 
-	DWORD MonoCollector::il2cpp_EnumFieldsInClass(Il2CppClass* klass, std::vector<FieldsInfo>& Fields)
+	DWORD MonoCollector::il2cpp_EnumFields(Il2CppClass* klass, std::vector<FieldInfo*>& Fields)
 	{
 		void* iter = NULL;
 		FieldInfo* field;
 		do
 		{
 			field = il2cpp_class_get_fields(klass, &iter);
-			if (!field)
-				continue;
-			Il2CppType* fieldtype = (Il2CppType*)il2cpp_field_get_type(field);
-			std::string sName = il2cpp_field_get_name(field);
-			std::string sType = il2cpp_type_get_name(fieldtype);
-			Fields.push_back({ field , sName ,sType });
+			if (!field) continue;
+			Fields.push_back(field);
 		} while (field);
+		return Fields.size();
 	}
 
-	DWORD MonoCollector::il2cpp_EnumClassesInImage(Il2CppImage* Image, std::vector<ClassInfo>& Classes)
+	DWORD MonoCollector::il2cpp_EnumClasses(Il2CppImage* Image, std::vector<Il2CppClass*>& Classes)
 	{
-		if (!Image) return 0;
-		if (il2cpp)
+		DWORD count = il2cpp_image_get_class_count(Image);
+		Classes.reserve(count);
+		for (DWORD i = 0; i < count; i++)
 		{
-			DWORD count = il2cpp_image_get_class_count(Image);
-			Classes.reserve(count);
-			for (DWORD i = 0; i < count; i++)
-			{
-				Il2CppClass* Class = (Il2CppClass*)il2cpp_image_get_class(Image, i);
-				if (!Class) continue;
-				std::string Name = il2cpp_class_get_name(Class);
-				std::string Name_space = il2cpp_class_get_namespace(Class);
-				Classes.push_back({ Class , Name , Name_space });
-			}
-			return Classes.size();
+			Il2CppClass* Class = (Il2CppClass*)il2cpp_image_get_class(Image, i);
+			if (!Class) continue;
+			Classes.push_back(Class);
 		}
-		else
-		{
-			
-		}
+		return Classes.size();
 	}
 
 	std::string MonoCollector::il2cpp_GetImageName(Il2CppImage* Image)
@@ -150,7 +186,7 @@ namespace Untiy3D
 		return il2cpp_image_get_filename(Image);
 	}
 
-	Il2CppImage* MonoCollector::il2cpp_GetImageInAssembly(Il2CppAssembly* Assembly)
+	Il2CppImage* MonoCollector::il2cpp_GetImage(Il2CppAssembly* Assembly)
 	{
 		return (Il2CppImage*)il2cpp_assembly_get_image(Assembly);
 	}
