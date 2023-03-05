@@ -13,7 +13,7 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="MonoCollector">
+    <Filter Include="UntiyCollector">
       <UniqueIdentifier>{caaec831-2066-4c9b-9c6f-96290635adb6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -21,16 +21,16 @@
     <ClCompile Include="dllmain.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="MonoCollector.cpp">
-      <Filter>MonoCollector</Filter>
+    <ClCompile Include="il2cppCollector.cpp">
+      <Filter>UntiyCollector</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="MonoCollector.h">
-      <Filter>MonoCollector</Filter>
+    <ClInclude Include="il2cppCollector.h">
+      <Filter>UntiyCollector</Filter>
     </ClInclude>
-    <ClInclude Include="CollectorAPI.h">
-      <Filter>MonoCollector</Filter>
+    <ClInclude Include="il2cppCollectorAPI.h">
+      <Filter>UntiyCollector</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

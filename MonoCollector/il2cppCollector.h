@@ -15,19 +15,19 @@
 
 #define DO_API(ret_type,name,args)\
 		using name##_t = ret_type(__cdecl*)args;
-#include "CollectorAPI.h"
+#include "il2cppCollectorAPI.h"
 #undef DO_API
 
 namespace Untiy3D
 {
-	class MonoCollector
+	class il2cppCollector
 	{
 	protected:
 		bool il2cpp = false;
 		HMODULE hModuleMono = nullptr;
 	public:
-		MonoCollector(std::string ModuleName);
-		~MonoCollector();
+		il2cppCollector(std::string ModuleName);
+		~il2cppCollector();
 
 		//Domains (Óò)
 		DWORD il2cpp_EnumDomains(std::vector<Il2CppDomain*>& Domains);
@@ -59,20 +59,21 @@ namespace Untiy3D
 
 		//Method (º¯Êý)
 		DWORD		il2cpp_EnumMethods			(Il2CppClass* klass, std::vector<MethodInfo*>& Methods);
-		MethodInfo* il2cpp_GetMethodFromName	(Il2CppClass* klass, std::string name);
+		MethodInfo* il2cpp_GetMethodFromName	(Il2CppClass* klass, std::string name, DWORD argscount = -1);
 		std::string il2cpp_GetMethodName		(MethodInfo* Method);
 		Il2CppType* il2cpp_GetMethodRetType		(MethodInfo* Method);
 		DWORD		il2cpp_GetMethodParamCount	(MethodInfo* Method);
 		Il2CppType* il2cpp_GetMethodParam		(MethodInfo* Method, DWORD index);
 		std::string il2cpp_GetMethodParamName	(MethodInfo* Method, DWORD index);
+		bool		il2cpp_GetMethodInstance	(MethodInfo* method);
+		DWORD_PTR	il2cpp_GetMethodMemAddress	(MethodInfo* method);
 
 	private:
-		void GetMonoFunc();
 		void Getil2cppFunc();
 	public:
 		#define DO_API(ret_type,name,args)\
 		name##_t name = nullptr;
-		#include "CollectorAPI.h"
+		#include "il2cppCollectorAPI.h"
 		#undef DO_API
 	};
 }
