@@ -150,10 +150,13 @@
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="il2cppCollector.cpp" />
+    <ClCompile Include="MonoCollector.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="il2cppCollectorAPI.h" />
     <ClInclude Include="il2cppCollector.h" />
+    <ClInclude Include="MonoCollector.h" />
+    <ClInclude Include="MonoCollectorAPI.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

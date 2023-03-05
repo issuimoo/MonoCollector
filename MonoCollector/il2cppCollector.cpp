@@ -50,7 +50,7 @@ namespace Untiy3D
 
 	DWORD_PTR il2cppCollector::il2cpp_GetMethodMemAddress(MethodInfo* method)
 	{
-		if (!method) return 0;
+		if(!method) return 0;
 		return *reinterpret_cast<DWORD_PTR*>(method);
 	}
 
