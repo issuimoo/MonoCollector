@@ -32,13 +32,20 @@ void Th()
 	for (size_t i = 0,max = Assemblys.size(); i < max; i++)
 	{
 		Il2CppImage* image = Mono->GetImageInAssembly(Assemblys[i]);
-		std::cout << "[" << i << "] " << Mono->GetImageName(image) << std::endl;
-
-		std::vector<Untiy3D::ClassInfo> Class;
-		Mono->EnumClassesInImage(image, Class);
-		for (size_t i = 0, max = Class.size(); i < max; i++)
+		std::string imagename = Mono->GetImageName(image);
+		if (imagename == "Assembly-CSharp.dll")
 		{
-			std::cout << "[" << Class[i].name_space << "] " << Class[i].name << std::endl;
+			std::vector<Untiy3D::MonoCollector::ClassInfo> Class;
+			Mono->EnumClassesInImage(image, Class);
+			for (size_t iw = 0, max = Class.size(); iw < max; iw++)
+			{
+				std::vector<Untiy3D::MonoCollector::FieldsInfo> Fields;
+				Mono->EnumFieldsInClass(Class[i].ptr, Fields);
+				for (size_t iq = 0, max = Fields.size(); iq < max; iq++)
+				{
+					std::cout << std::format("[{}][{}] {}({})", imagename, Class[iw].name, Fields[iq].name, Fields[iq].name_type) << std::endl;
+				}
+			}
 		}
 	}
 }

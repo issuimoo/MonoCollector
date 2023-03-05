@@ -152,8 +152,8 @@
     <ClCompile Include="MonoCollector.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="il2cpp-api-types.h" />
-    <ClInclude Include="MonoCollector.hpp" />
+    <ClInclude Include="CollectorAPI.h" />
+    <ClInclude Include="MonoCollector.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -26,10 +26,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="MonoCollector.hpp">
+    <ClInclude Include="MonoCollector.h">
       <Filter>MonoCollector</Filter>
     </ClInclude>
-    <ClInclude Include="il2cpp-api-types.h">
+    <ClInclude Include="CollectorAPI.h">
       <Filter>MonoCollector</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,4 +1,3 @@
-#pragma once
 
 typedef struct Il2CppClass Il2CppClass;
 typedef struct Il2CppType Il2CppType;
@@ -111,27 +110,10 @@ typedef struct
 	void* (*aligned_realloc_func)(void* ptr, size_t size, size_t alignment);
 } Il2CppMemoryCallbacks;
 
-#if !__SNC__ // SNC doesn't like the following define: "warning 1576: predefined meaning of __has_feature discarded"
-#ifndef __has_feature // clang specific __has_feature check
-#define __has_feature(x) 0 // Compatibility with non-clang compilers.
-#endif
-#endif
 
-#if _MSC_VER
 typedef wchar_t Il2CppChar;
-#elif __has_feature(cxx_unicode_literals)
-typedef char16_t Il2CppChar;
-#else
-typedef uint16_t Il2CppChar;
-#endif
-
-#if _MSC_VER
 typedef wchar_t Il2CppNativeChar;
 #define IL2CPP_NATIVE_STRING(str) L##str
-#else
-typedef char Il2CppNativeChar;
-#define IL2CPP_NATIVE_STRING(str) str
-#endif
 
 typedef void (*il2cpp_register_object_callback)(Il2CppObject** arr, int size, void* userdata);
 typedef void (*il2cpp_WorldChangedCallback)();
@@ -147,17 +129,9 @@ typedef void (*Il2CppProfileThreadFunc) (Il2CppProfiler* prof, unsigned long tid
 typedef const Il2CppNativeChar* (*Il2CppSetFindPlugInCallback)(const Il2CppNativeChar*);
 typedef void (*Il2CppLogCallback)(const char*);
 
-struct Il2CppManagedMemorySnapshot;
-
 typedef void (*Il2CppMethodPointer)();
 typedef uintptr_t il2cpp_array_size_t;
 #define ARRAY_LENGTH_AS_INT32(a) ((int32_t)a)
-
-
-
-#define DO_API(ret_type, name, args )\
-	  using name##_t = ret_type( __cdecl * )args;\
-	  inline name##_t name = nullptr;
 
 DO_API(void, il2cpp_init, (const char* domain_name));
 DO_API(void, il2cpp_init_utf16, (const Il2CppChar* domain_name));
@@ -425,5 +399,3 @@ DO_API(bool, il2cpp_custom_attrs_has_attr, (Il2CppCustomAttrInfo* ainfo, Il2CppC
 DO_API(Il2CppArray*, il2cpp_custom_attrs_construct, (Il2CppCustomAttrInfo* cinfo));
 
 DO_API(void, il2cpp_custom_attrs_free, (Il2CppCustomAttrInfo* ainfo));
-
-#undef DO_API
