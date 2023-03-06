@@ -21,20 +21,11 @@
     <ClCompile Include="dllmain.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="il2cppCollector.cpp">
-      <Filter>UntiyCollector</Filter>
-    </ClCompile>
     <ClCompile Include="MonoCollector.cpp">
       <Filter>UntiyCollector</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="il2cppCollector.h">
-      <Filter>UntiyCollector</Filter>
-    </ClInclude>
-    <ClInclude Include="il2cppCollectorAPI.h">
-      <Filter>UntiyCollector</Filter>
-    </ClInclude>
     <ClInclude Include="MonoCollector.h">
       <Filter>UntiyCollector</Filter>
     </ClInclude>

@@ -1,6 +1,4 @@
-﻿#include "il2cppCollector.h"
-
-#include <iostream>
+﻿#include "MonoCollector.h"
 
 HWND StartConsole(const char* title, bool close) {
 	HANDLE g_hOutput = 0;
@@ -23,44 +21,10 @@ HWND StartConsole(const char* title, bool close) {
 void Th()
 {
 	system("pause");
-	Untiy3D::il2cppCollector* il2cpp = new Untiy3D::il2cppCollector("GameAssembly.dll");
+	Untiy3D::MonoCollector* Mono = new Untiy3D::MonoCollector("GameAssembly.dll");
 	StartConsole("",true);
 
-	std::vector<Il2CppAssembly*> Assemblys;
-	std::cout << "size:" << il2cpp->il2cpp_EnummAssembly(Assemblys) << std::endl;
-	for (size_t i = 0,max = Assemblys.size(); i < max; i++)
-	{
-		Il2CppImage* image = il2cpp->il2cpp_GetImage(Assemblys[i]);
-		std::string imagename = il2cpp->il2cpp_GetImageName(image);
-		if (imagename == "Assembly-CSharp.dll")
-		{
-			std::vector<Il2CppClass*> Class;
-			il2cpp->il2cpp_EnumClasses(image, Class);
-			for (size_t iw = 0, max = Class.size(); iw < max; iw++)
-			{
-				std::vector<MethodInfo*> Methods;
-				il2cpp->il2cpp_EnumMethods(Class[iw], Methods);
-				for (size_t iq = 0, max = Methods.size(); iq < max; iq++)
-				{
-					std::cout << std::format("[{:#08x}][{}][{}] {} {}", il2cpp->il2cpp_GetMethodMemAddress(Methods[iq]), imagename, il2cpp->il2cpp_GetClassName(Class[iw]), il2cpp->il2cpp_GetTypeName(il2cpp->il2cpp_GetMethodRetType(Methods[iq])), il2cpp->il2cpp_GetMethodName(Methods[iq]));
-					std::cout << "(";
-					DWORD count = il2cpp->il2cpp_GetMethodParamCount(Methods[iq]);
-					for (size_t i = 0; i < count; i++)
-					{
-						std::cout << il2cpp->il2cpp_GetTypeName(il2cpp->il2cpp_GetMethodParam(Methods[iq], i)) << " " << il2cpp->il2cpp_GetMethodParamName(Methods[iq], i) << ",";
-					}
-					if (count)
-					{
-						std::cout << "\b)\n";
-					}
-					else
-					{
-						std::cout << ")\n";
-					}
-				}
-			}
-		}
-	}
+	Mono->il2cpp_Dump2File(".\\dump.cs");
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
