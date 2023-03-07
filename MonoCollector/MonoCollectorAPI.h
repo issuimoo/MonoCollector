@@ -399,3 +399,189 @@ DO_API(bool, il2cpp_custom_attrs_has_attr, (Il2CppCustomAttrInfo* ainfo, Il2CppC
 DO_API(Il2CppArray*, il2cpp_custom_attrs_construct, (Il2CppCustomAttrInfo* cinfo));
 
 DO_API(void, il2cpp_custom_attrs_free, (Il2CppCustomAttrInfo* ainfo));
+
+#define MONO_DATACOLLECTORVERSION 20221207 
+
+#define MONOCMD_INITMONO 0
+#define MONOCMD_OBJECT_GETCLASS 1
+#define MONOCMD_ENUMDOMAINS 2
+#define MONOCMD_SETCURRENTDOMAIN 3
+#define MONOCMD_ENUMASSEMBLIES 4
+#define MONOCMD_GETIMAGEFROMASSEMBLY 5
+#define MONOCMD_GETIMAGENAME 6
+#define MONOCMD_ENUMCLASSESINIMAGE 7
+#define MONOCMD_ENUMFIELDSINCLASS 8
+#define MONOCMD_ENUMMETHODSINCLASS 9
+#define MONOCMD_COMPILEMETHOD 10
+
+#define MONOCMD_GETMETHODHEADER 11
+#define MONOCMD_GETMETHODHEADER_CODE 12
+#define MONOCMD_LOOKUPRVA 13
+#define MONOCMD_GETJITINFO 14
+#define MONOCMD_FINDCLASS 15
+#define MONOCMD_FINDMETHOD 16
+#define MONOCMD_GETMETHODNAME 17
+#define MONOCMD_GETMETHODCLASS 18
+#define MONOCMD_GETCLASSNAME 19
+#define MONOCMD_GETCLASSNAMESPACE 20
+#define MONOCMD_FREEMETHOD 21
+#define MONOCMD_TERMINATE 22
+#define MONOCMD_DISASSEMBLE 23
+#define MONOCMD_GETMETHODSIGNATURE 24
+#define MONOCMD_GETPARENTCLASS 25
+#define MONOCMD_GETSTATICFIELDADDRESSFROMCLASS 26
+#define MONOCMD_GETTYPECLASS 27
+#define MONOCMD_GETARRAYELEMENTCLASS 28
+#define MONOCMD_FINDMETHODBYDESC 29
+#define MONOCMD_INVOKEMETHOD 30
+#define MONOCMD_LOADASSEMBLY 31
+#define MONOCMD_GETFULLTYPENAME 32
+#define MONOCMD_OBJECT_NEW 33
+#define MONOCMD_OBJECT_INIT 34
+#define MONOCMD_GETVTABLEFROMCLASS 35
+#define MONOCMD_GETMETHODPARAMETERS 36
+#define MONOCMD_ISCLASSGENERIC 37
+#define MONOCMD_ISIL2CPP 38
+#define MONOCMD_FILLOPTIONALFUNCTIONLIST 39
+#define MONOCMD_GETSTATICFIELDVALUE 40
+#define MONOCMD_SETSTATICFIELDVALUE 41
+#define MONOCMD_GETCLASSIMAGE 42
+#define MONOCMD_FREE 43
+#define MONOCMD_GETIMAGEFILENAME 44
+#define MONOCMD_GETCLASSNESTINGTYPE 45
+#define MONOCMD_LIMITEDCONNECTION 46
+#define MONOCMD_GETMONODATACOLLECTORVERSION 47
+#define MONOCMD_NEWSTRING 48
+
+
+typedef struct {} MonoType;
+typedef struct {} MonoObject;
+typedef struct {} MonoMethodSignature;
+typedef void* gpointer;
+
+typedef void(__cdecl* GFunc)(void* data, void* user_data);
+
+DO_API(void*, mono_get_root_domain,(void));
+DO_API(void*, mono_thread_attach,(void* domain));
+DO_API(void, mono_thread_detach,(void* monothread));
+DO_API(void, mono_thread_cleanup,(void));
+DO_API(void*, mono_object_get_class,(void* object));
+
+DO_API(void, mono_domain_foreach,(GFunc func, void* user_data));
+
+DO_API(int, mono_domain_set,(void* domain, bool force));
+DO_API(void*, mono_domain_get,());
+DO_API(int, mono_assembly_foreach,(GFunc func, void* user_data));
+DO_API(void*, mono_assembly_get_image,(void* assembly));
+DO_API(void*, mono_assembly_open,(void* fname, int* status));
+DO_API(void*, mono_image_get_assembly,(void* image));
+DO_API(char*, mono_image_get_name,(void* image));
+DO_API(void*, mono_image_open,(const char* fname, int* status));
+DO_API(char*, mono_image_get_filename,(void* image));
+
+
+DO_API(void*, mono_image_get_table_info,(void* image, int table_id));
+DO_API(int, mono_table_info_get_rows,(void* tableinfo));
+DO_API(int, mono_metadata_decode_row_col,(void* tableinfo, int idx, unsigned int col));
+DO_API(char*, mono_metadata_string_heap,(void* image, UINT32 index));
+
+DO_API(void*, mono_class_from_name_case,(void* image, char* name_space, char* name));
+DO_API(void*, mono_class_from_name,(void* image, char* name_space, char* name));
+DO_API(char*, mono_class_get_name,(void* klass));
+DO_API(char*, mono_class_get_namespace,(void* klass));
+DO_API(void*, mono_class_get,(void* image, UINT32 tokenindex));
+DO_API(void*, mono_class_from_typeref,(void* image, UINT32 type_token));
+DO_API(char*, mono_class_name_from_token,(void* image, UINT32 token));
+
+DO_API(void*, mono_class_get_methods,(void* klass, void* iter));
+DO_API(void*, mono_class_get_method_from_name,(void* klass, char* methodname, int paramcount));
+DO_API(void*, mono_class_get_fields,(void* klass, void* iter));
+DO_API(void*, mono_class_get_parent,(void* klass));
+DO_API(void*, mono_class_get_image,(void* klass));
+DO_API(void*, mono_class_vtable,(void* domain, void* klass));
+DO_API(int, mono_class_instance_size,(void* klass));
+DO_API(void*, mono_class_from_mono_type,(void* type));
+DO_API(void*, mono_class_get_element_class,(void* klass));
+DO_API(int, mono_class_is_generic,(void* klass));
+
+
+
+DO_API(int, mono_class_num_fields,(void* klass));
+DO_API(int, mono_class_num_methods,(void* klass));
+
+DO_API(char*, mono_field_get_name,(void* field));
+DO_API(void*, mono_field_get_type,(void* field));
+DO_API(void*, mono_field_get_parent,(void* field));
+DO_API(int, mono_field_get_offset,(void* field));
+
+DO_API(char*, mono_type_get_name,(void* type));
+DO_API(int, mono_type_get_type,(void* type));
+DO_API(char*, mono_type_get_name_full,(void* type, int format));
+DO_API(int, mono_field_get_flags,(void* type));
+
+
+
+
+DO_API(char*, mono_method_get_name,(void* method));
+DO_API(void*, mono_compile_method,(void* method));
+DO_API(void, mono_free_method,(void* method));
+
+DO_API(void*, mono_jit_info_table_find,(void* domain, void* addr));
+
+DO_API(void*, mono_jit_info_get_method,(void* jitinfo));
+DO_API(void*, mono_jit_info_get_code_start,(void* jitinfo));
+DO_API(int, mono_jit_info_get_code_size,(void* jitinfo));
+
+DO_API(int, mono_jit_exec,(void* domain, void* assembly, int argc, char* argv[]));
+
+
+DO_API(uint32_t, mono_method_get_flags,(void* method, uint32_t* iflags));
+DO_API(void*, mono_method_get_header,(void* method));
+DO_API(void*, mono_method_get_class,(void* method));
+DO_API(void*, mono_method_sig,(void* method));
+DO_API(void*, mono_method_get_param_names,(void* method, const char** names));
+
+DO_API(void*, mono_method_header_get_code,(void* methodheader, UINT32* code_size, UINT32* max_stack));
+DO_API(char*, mono_disasm_code,(void* dishelper, void* method, void* ip, void* end));
+
+DO_API(char*, mono_signature_get_desc,(void* signature, int include_namespace));
+DO_API(MonoType*, mono_signature_get_params,(MonoMethodSignature* sig, gpointer* iter));
+DO_API(int, mono_signature_get_param_count,(void* signature));
+DO_API(MonoType*, mono_signature_get_return_type,(void* signature));
+
+
+DO_API(void*, mono_image_rva_map,(void* image, UINT32 addr));
+DO_API(void*, mono_vtable_get_static_field_data,(void* vtable));
+
+
+DO_API(void*, mono_method_desc_new,(const char* name, int include_namespace));
+DO_API(void*, mono_method_desc_from_method,(void* method));
+DO_API(void, mono_method_desc_free,(void* desc));
+
+DO_API(void*, mono_assembly_name_new,(const char* name));
+DO_API(void*, mono_assembly_loaded,(void* aname));
+DO_API(void*, mono_image_loaded,(void* aname));
+
+DO_API(void*, mono_string_new,(void* domain, const char* text));
+DO_API(char*, mono_string_to_utf8,(void*));
+DO_API(void*, mono_array_new,(void* domain, void* eclass, uintptr_t n));
+DO_API(void*, mono_object_to_string,(void* object, void** exc));
+DO_API(void*, mono_object_new,(void* domain, void* klass));
+
+
+DO_API(void, mono_free,(void*));
+
+DO_API(void*, mono_method_desc_search_in_image,(void* desc, void* image));
+DO_API(void*, mono_runtime_invoke,(void* method, void* obj, void** params, MonoObject** exc));
+DO_API(void*, mono_runtime_invoke_array,(void* method, void* obj, void* params, void** exc));
+DO_API(void*, mono_runtime_object_init,(void* object));
+
+DO_API(void*, mono_field_static_get_value,(void* vtable, void* field, void* output));
+DO_API(void*, mono_field_static_set_value,(void* vtable, void* field, void* input));
+
+DO_API(void*, mono_value_box,(void* domain, void* klass, void* val));
+DO_API(void*, mono_object_unbox,(void* obj));
+DO_API(void*, mono_class_get_type,(void* klass));
+DO_API(void*, mono_class_get_nesting_type,(void* klass));
+
+DO_API(int, mono_runtime_is_shutting_down,(void));

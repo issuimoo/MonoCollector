@@ -26,6 +26,8 @@ namespace Untiy3D
 		MonoCollector(std::string ModuleName);
 		~MonoCollector();
 
+		//il2cpp
+
 		//Dump
 		void il2cpp_Dump2File(std::string file);
 
@@ -70,6 +72,13 @@ namespace Untiy3D
 		bool		il2cpp_GetMethodInstance	(MethodInfo* method);
 		DWORD_PTR	il2cpp_GetMethodAddress		(MethodInfo* method);
 		DWORD_PTR	il2cpp_GetMethodAddress		(std::string klass, std::string Method, std::string Image = "", std::string namespaze = "");
+
+
+		//Mono
+
+		//Domains (”Ú)
+		DWORD Mono_EnumDomains(std::vector<Il2CppDomain*>& Domains);
+
 
 	private:
 		void GetFunc();

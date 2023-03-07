@@ -19,7 +19,7 @@ namespace Untiy3D
 {
 	MonoCollector::~MonoCollector()
 	{
-
+		hModuleMono = nullptr;
 	}
 
 	MonoCollector::MonoCollector(std::string ModuleName)
@@ -42,11 +42,20 @@ namespace Untiy3D
 		#undef DO_API
 	}
 
+	DWORD MonoCollector::Mono_EnumDomains(std::vector<Il2CppDomain*>& Domains)
+	{
+
+	}
+
 	void MonoCollector::il2cpp_Dump2File(std::string file)
 	{
-		std::ofstream io(file);
+		std::ofstream io(file + "\\dump.cs");
+		std::ofstream io2(file + "\\il2cpp.hpp");
+
 		if (!io) return;
 		std::stringstream str;
+		std::stringstream str2;
+
 		std::vector<Il2CppAssembly*> Assemblys;
 		for (size_t i = 0, max = il2cpp_EnummAssembly(Assemblys); i < max; i++)
 		{
@@ -61,24 +70,46 @@ namespace Untiy3D
 			for (size_t i_c = 0,max_c = il2cpp_EnumClasses(image, Classes); i_c < max_c; i_c++)
 			{
 				str << std::format("// Namespace: {}\npublic class {}\n", il2cpp_GetClassNamespace(Classes[i_c]), il2cpp_GetClassName(Classes[i_c])) << "{\n\t// Fields" << std::endl;
-
+				str2 << std::format("struct {}\n", il2cpp_GetClassName(Classes[i_c])) << "{" << std::endl;
 
 				std::vector<FieldInfo*> Field;
 				for (size_t i_f = 0,max_f = il2cpp_EnumFields(Classes[i_c], Field); i_f < max_f; i_f++)
 				{
-					str << std::format("\tpublic {} {}; // {:#08X}", il2cpp_GetTypeName(il2cpp_GetFieldType(Field[i_f])), il2cpp_GetFieldName(Field[i_f]), il2cpp_GetFieldOffset(Field[i_f])) << std::endl;
+					auto Typename = il2cpp_GetTypeName(il2cpp_GetFieldType(Field[i_f]));
+					std::string Type = Typename;
+					if (Typename.find_last_of(".") != std::string::npos)
+					{
+						Type = Typename.substr(Typename.find_last_of(".") + 1, Typename.length());
+					}
+					str << std::format("\tpublic {} {}; // {:#X}", Type, il2cpp_GetFieldName(Field[i_f]), il2cpp_GetFieldOffset(Field[i_f])) << std::endl;
+					str2 << std::format("\t{} {}; // {:#X}", Type, il2cpp_GetFieldName(Field[i_f]), il2cpp_GetFieldOffset(Field[i_f])) << std::endl;
 				}
 				str << std::endl << std::endl << std::endl << "\t// Methods" << std::endl;
+				str2 << "\n};" << std::endl;
 
 				std::vector<MethodInfo*> Methods;
 				for (size_t i_m = 0,max_m = il2cpp_EnumMethods(Classes[i_c], Methods); i_m < max_m; i_m++)
 				{
 					str << std::format("\t// RVA: {:#08X}", il2cpp_GetMethodAddress(Methods[i_m]) - (DWORD_PTR)hModuleMono) << std::endl;
-					str << std::format("\tpublic {} {}(", il2cpp_GetTypeName(il2cpp_GetMethodRetType(Methods[i_m])), il2cpp_GetMethodName(Methods[i_m]));
+
+					auto retTypename = il2cpp_GetTypeName(il2cpp_GetMethodRetType(Methods[i_m]));
+					std::string retType = retTypename;
+					if (retTypename.find_last_of(".") != std::string::npos)
+					{
+						retType = retTypename.substr(retTypename.find_last_of(".") + 1, retTypename.length());
+					}
+					str << std::format("\tpublic {} {}(", retType, il2cpp_GetMethodName(Methods[i_m]));
 
 					for (size_t i_p = 0, max_p = il2cpp_GetMethodParamCount(Methods[i_m]); i_p < max_p; i_p++)
 					{
-						str << il2cpp_GetTypeName(il2cpp_GetMethodParam(Methods[i_m], i_p)) << " " << il2cpp_GetMethodParamName(Methods[i_m], i_p) << (1 == (max_p - i_p) ? "" : ", ");
+						auto Typename = il2cpp_GetTypeName(il2cpp_GetMethodParam(Methods[i_m], i_p));
+						std::string Type = Typename;
+						if (Typename.find_last_of(".") != std::string::npos)
+						{
+							Type = Typename.substr(Typename.find_last_of(".") + 1, Typename.length());
+						}
+						
+						str << Type << " " << il2cpp_GetMethodParamName(Methods[i_m], i_p) << (1 == (max_p - i_p) ? "" : ", ");
 					}
 					str << ");\n\n";
 				}
@@ -86,7 +117,9 @@ namespace Untiy3D
 			}
 		}
 		io << str.str();
+		io2 << str2.str();
 		io.close();
+		io2.close();
 	}
 
 	DWORD MonoCollector::il2cpp_GetCount(Il2CppImage* Image)

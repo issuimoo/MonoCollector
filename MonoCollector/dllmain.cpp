@@ -21,10 +21,16 @@ HWND StartConsole(const char* title, bool close) {
 void Th()
 {
 	system("pause");
+
+	
 	Untiy3D::MonoCollector* Mono = new Untiy3D::MonoCollector("GameAssembly.dll");
 	StartConsole("",true);
 
-	Mono->il2cpp_Dump2File(".\\dump.cs");
+	std::cout << "start dump ..." << std::endl;
+
+	Mono->il2cpp_Dump2File(".\\");
+
+	std::cout << "dump done!" << std::endl;
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
