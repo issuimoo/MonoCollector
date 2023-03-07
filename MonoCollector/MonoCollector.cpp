@@ -78,22 +78,25 @@ namespace Untiy3D
 		std::ofstream io3(file + "\\Mono-func.hpp");
 
 		if (!io) return;
+		std::stringstream str;
+		std::stringstream str2;
+		std::stringstream str3;
 
 		std::vector<MonoAssembly*> Assemblys;
 		for (size_t i = 0, max = Mono_EnummAssembly(Assemblys); i < max; i++)
 		{
 			auto image = Mono_GetImage(Assemblys[i]);
-			io << std::format("// Image {}: {} - {}", i, Mono_GetImageName(image), Mono_GetClassCount(image)) << std::endl;
+			str << std::format("// Image {}: {} - {}", i, Mono_GetImageName(image), Mono_GetClassCount(image)) << std::endl;
 		}
-		io << std::endl << std::endl << std::endl;
+		str << std::endl << std::endl << std::endl;
 		for (size_t i = 0, max = Assemblys.size(); i < max; i++)
 		{
 			auto image = Mono_GetImage(Assemblys[i]);
 			std::vector<MonoClass*> Classes;
 			for (size_t i_c = 0, max_c = Mono_EnumClasses(image, Classes); i_c < max_c; i_c++)
 			{
-				io << std::format("// Namespace: {}\npublic class {}\n", Mono_GetClassNamespace(Classes[i_c]), Mono_GetClassName(Classes[i_c])) << "{\n\t// Fields" << std::endl;
-				io2 << std::format("struct {}\n", Mono_GetClassName(Classes[i_c])) << "{" << std::endl;
+				str << std::format("// Namespace: {}\npublic class {}\n", Mono_GetClassNamespace(Classes[i_c]), Mono_GetClassName(Classes[i_c])) << "{\n\t// Fields" << std::endl;
+				str2 << std::format("struct {}\n", Mono_GetClassName(Classes[i_c])) << "{" << std::endl;
 
 				std::vector<FieldInfo*> Field;
 				for (size_t i_f = 0, max_f = Mono_EnumFields(Classes[i_c], Field); i_f < max_f; i_f++)
@@ -104,16 +107,16 @@ namespace Untiy3D
 					{
 						Type = Typename.substr(Typename.find_last_of(".") + 1, Typename.length());
 					}
-					io << std::format("\tpublic {} {}; // {:#X}", Type, Mono_GetFieldName(Field[i_f]), Mono_GetFieldOffset(Field[i_f])) << std::endl;
-					io2 << std::format("\t{} {}; // {:#X}", Type, Mono_GetFieldName(Field[i_f]), Mono_GetFieldOffset(Field[i_f])) << std::endl;
+					str << std::format("\tpublic {} {}; // {:#X}", Type, Mono_GetFieldName(Field[i_f]), Mono_GetFieldOffset(Field[i_f])) << std::endl;
+					str2 << std::format("\t{} {}; // {:#X}", Type, Mono_GetFieldName(Field[i_f]), Mono_GetFieldOffset(Field[i_f])) << std::endl;
 				}
-				io << std::endl << std::endl << std::endl << "\t// Methods" << std::endl;
-				io2 << "\n};" << std::endl;
+				str << std::endl << std::endl << std::endl << "\t// Methods" << std::endl;
+				str2 << "\n};" << std::endl;
 
 				std::vector<MethodInfo*> Methods;
 				for (size_t i_m = 0, max_m = Mono_EnumMethods(Classes[i_c], Methods); i_m < max_m; i_m++)
 				{
-					io << std::format("\t// RVA: {:#08X}", Mono_GetMethodAddress(Methods[i_m]) - (DWORD_PTR)hModuleMono) << std::endl;
+					str << std::format("\t// RVA: {:#08X}", Mono_GetMethodAddress(Methods[i_m]) - (DWORD_PTR)hModuleMono) << std::endl;
 
 					auto retTypename = Mono_GetTypeName(Mono_GetMethodRetType(Methods[i_m]));
 					std::string retType = retTypename;
@@ -121,8 +124,8 @@ namespace Untiy3D
 					{
 						retType = retTypename.substr(retTypename.find_last_of(".") + 1, retTypename.length());
 					}
-					io << std::format("\tpublic {} {}(", retType, Mono_GetMethodName(Methods[i_m]));
-					io3 << std::format("DO_API({}, {}, (", retType, Mono_GetMethodName(Methods[i_m]));
+					str << std::format("\tpublic {} {}(", retType, Mono_GetMethodName(Methods[i_m]));
+					str3 << std::format("DO_API({}, {}_{}, (", retType, Mono_GetClassName(Classes[i_c]), Mono_GetMethodName(Methods[i_m]));
 
 					for (size_t i_p = 0, max_p = Mono_GetMethodParamCount(Methods[i_m]); i_p < max_p; i_p++)
 					{
@@ -133,16 +136,19 @@ namespace Untiy3D
 							Type = Typename.substr(Typename.find_last_of(".") + 1, Typename.length());
 						}
 
-						io << Type << " " << Mono_GetMethodParamName(Methods[i_m], i_p) << (1 == (max_p - i_p) ? "" : ", ");
-						io3 << Type << " " << Mono_GetMethodParamName(Methods[i_m], i_p) << (1 == (max_p - i_p) ? "" : ", ");
+						str << Type << " " << Mono_GetMethodParamName(Methods[i_m], i_p) << (1 == (max_p - i_p) ? "" : ", ");
+						str3 << Type << " " << Mono_GetMethodParamName(Methods[i_m], i_p) << (1 == (max_p - i_p) ? "" : ", ");
 
 					}
-					io << ");\n\n";
-					io3 << "));\n";
+					str << ");\n\n";
+					str3 << "));\n";
 				}
-				io << "}" << std::endl << std::endl << std::endl;
+				str << "}" << std::endl << std::endl << std::endl;
 			}
 		}
+		io << str.str();
+		io2 << str2.str();
+		io3 << str3.str();
 		io.close();
 		io2.close();
 		io3.close();
@@ -396,7 +402,7 @@ namespace Untiy3D
 						retType = retTypename.substr(retTypename.find_last_of(".") + 1, retTypename.length());
 					}
 					str << std::format("\tpublic {} {}(", retType, il2cpp_GetMethodName(Methods[i_m]));
-					str3 << std::format("DO_API({}, {}, (", retType, il2cpp_GetMethodName(Methods[i_m]));
+					str3 << std::format("DO_API({}, {}_{}, (", retType, il2cpp_GetClassName(Classes[i_c]), il2cpp_GetMethodName(Methods[i_m]));
 
 					for (size_t i_p = 0, max_p = il2cpp_GetMethodParamCount(Methods[i_m]); i_p < max_p; i_p++)
 					{
