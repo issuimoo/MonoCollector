@@ -75,6 +75,9 @@ namespace Untiy3D
 
 		//Mono
 
+		//Dump
+		void Mono_Dump2File(std::string file);
+
 		//Domains (”Ú)
 		DWORD Mono_EnumDomains(std::vector<MonoDomain*>& Domains);
 

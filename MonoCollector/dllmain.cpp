@@ -23,12 +23,14 @@ void Th()
 	system("pause");
 
 	
-	Untiy3D::MonoCollector* Mono = new Untiy3D::MonoCollector("GameAssembly.dll");
+	//Untiy3D::MonoCollector* Mono = new Untiy3D::MonoCollector("mono.dll");
+	Untiy3D::MonoCollector* Mono = new Untiy3D::MonoCollector("mono-2.0-bdwgc.dll");
+
 	StartConsole("",true);
 
 	std::cout << "start dump ..." << std::endl;
 
-	Mono->il2cpp_Dump2File(".\\");
+	Mono->Mono_Dump2File(".\\");
 
 	std::cout << "dump done!" << std::endl;
 }

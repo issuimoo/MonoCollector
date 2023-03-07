@@ -1,4 +1,5 @@
 #include "MonoCollector.h"
+#include "SEH.hpp"
 
 WORD UTF8TOUTF16(char* szUtf8) 
 {
@@ -29,7 +30,6 @@ namespace Untiy3D
 		if (!hModuleMono)
 		{
 			MessageBox(NULL, "Can not find Module", "error", NULL);
-			return;
 		}
 		GetFunc();
 	}
@@ -40,6 +40,16 @@ namespace Untiy3D
 		name = reinterpret_cast<name##_t>(GetProcAddress(hModuleMono, #name));
 		#include "MonoCollectorAPI.h"
 		#undef DO_API
+		if (mono_thread_attach)
+		{
+			if (mono_get_root_domain)
+			{
+				auto domain = mono_get_root_domain();
+				mono_thread_attach(domain);
+			}
+		}
+		if (il2cpp_thread_attach)
+			il2cpp_thread_attach(il2cpp_domain_get());
 	}
 
 	MonoType* MonoCollector::Mono_GetMethodParam(MethodInfo* Method, DWORD index)
@@ -59,6 +69,83 @@ namespace Untiy3D
 			}
 			i++;
 		} while (method);
+	}
+
+	void MonoCollector::Mono_Dump2File(std::string file)
+	{
+		std::ofstream io(file + "\\dump.cs");
+		std::ofstream io2(file + "\\Mono.hpp");
+		std::ofstream io3(file + "\\Mono-func.hpp");
+
+		if (!io) return;
+
+		std::vector<MonoAssembly*> Assemblys;
+		for (size_t i = 0, max = Mono_EnummAssembly(Assemblys); i < max; i++)
+		{
+			auto image = Mono_GetImage(Assemblys[i]);
+			io << std::format("// Image {}: {} - {}", i, Mono_GetImageName(image), Mono_GetClassCount(image)) << std::endl;
+		}
+		io << std::endl << std::endl << std::endl;
+		for (size_t i = 0, max = Assemblys.size(); i < max; i++)
+		{
+			auto image = Mono_GetImage(Assemblys[i]);
+			std::vector<MonoClass*> Classes;
+			for (size_t i_c = 0, max_c = Mono_EnumClasses(image, Classes); i_c < max_c; i_c++)
+			{
+				io << std::format("// Namespace: {}\npublic class {}\n", Mono_GetClassNamespace(Classes[i_c]), Mono_GetClassName(Classes[i_c])) << "{\n\t// Fields" << std::endl;
+				io2 << std::format("struct {}\n", Mono_GetClassName(Classes[i_c])) << "{" << std::endl;
+
+				std::vector<FieldInfo*> Field;
+				for (size_t i_f = 0, max_f = Mono_EnumFields(Classes[i_c], Field); i_f < max_f; i_f++)
+				{
+					auto Typename = Mono_GetTypeName(Mono_GetFieldType(Field[i_f]));
+					std::string Type = Typename;
+					if (Typename.find_last_of(".") != std::string::npos)
+					{
+						Type = Typename.substr(Typename.find_last_of(".") + 1, Typename.length());
+					}
+					io << std::format("\tpublic {} {}; // {:#X}", Type, Mono_GetFieldName(Field[i_f]), Mono_GetFieldOffset(Field[i_f])) << std::endl;
+					io2 << std::format("\t{} {}; // {:#X}", Type, Mono_GetFieldName(Field[i_f]), Mono_GetFieldOffset(Field[i_f])) << std::endl;
+				}
+				io << std::endl << std::endl << std::endl << "\t// Methods" << std::endl;
+				io2 << "\n};" << std::endl;
+
+				std::vector<MethodInfo*> Methods;
+				for (size_t i_m = 0, max_m = Mono_EnumMethods(Classes[i_c], Methods); i_m < max_m; i_m++)
+				{
+					io << std::format("\t// RVA: {:#08X}", Mono_GetMethodAddress(Methods[i_m]) - (DWORD_PTR)hModuleMono) << std::endl;
+
+					auto retTypename = Mono_GetTypeName(Mono_GetMethodRetType(Methods[i_m]));
+					std::string retType = retTypename;
+					if (retTypename.find_last_of(".") != std::string::npos)
+					{
+						retType = retTypename.substr(retTypename.find_last_of(".") + 1, retTypename.length());
+					}
+					io << std::format("\tpublic {} {}(", retType, Mono_GetMethodName(Methods[i_m]));
+					io3 << std::format("DO_API({}, {}, (", retType, Mono_GetMethodName(Methods[i_m]));
+
+					for (size_t i_p = 0, max_p = Mono_GetMethodParamCount(Methods[i_m]); i_p < max_p; i_p++)
+					{
+						auto Typename = Mono_GetTypeName(Mono_GetMethodParam(Methods[i_m], i_p));
+						std::string Type = Typename;
+						if (Typename.find_last_of(".") != std::string::npos)
+						{
+							Type = Typename.substr(Typename.find_last_of(".") + 1, Typename.length());
+						}
+
+						io << Type << " " << Mono_GetMethodParamName(Methods[i_m], i_p) << (1 == (max_p - i_p) ? "" : ", ");
+						io3 << Type << " " << Mono_GetMethodParamName(Methods[i_m], i_p) << (1 == (max_p - i_p) ? "" : ", ");
+
+					}
+					io << ");\n\n";
+					io3 << "));\n";
+				}
+				io << "}" << std::endl << std::endl << std::endl;
+			}
+		}
+		io.close();
+		io2.close();
+		io3.close();
 	}
 
 	DWORD_PTR MonoCollector::Mono_GetMethodAddress(std::string klass, std::string Method, std::string Image, std::string namespaze)
@@ -210,9 +297,10 @@ namespace Untiy3D
 		for (int i = 0; i < tdefcount; i++)
 		{
 			MonoClass* c = mono_class_get(Image, MONO_TOKEN_TYPE_DEF | (i + 1));
-			if (c != NULL) continue;
+			if (c == NULL) continue;
 			Classes.push_back(c);
 		}
+		return Classes.size();
 	}
 
 	MonoImage* MonoCollector::Mono_GetImage(MonoAssembly* Assembly)
