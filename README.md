@@ -1,2 +1,2 @@
 # MonoCollector
- Mono分析工具
+Mono / il2cpp RuntimeDump
