@@ -6,10 +6,6 @@
 #include <string>
 #include <locale>
 #include <codecvt>
-#include <format>
-#include <fstream>
-#include <iostream>
-#include <sstream>
 
 #define DO_API(ret_type,name,args)\
 using name##_t = ret_type(__cdecl*)args;

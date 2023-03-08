@@ -1,5 +1,8 @@
 #include "MonoCollector.h"
-#include "SEH.hpp"
+#include <format>
+#include <fstream>
+#include <iostream>
+#include <sstream>
 
 WORD UTF8TOUTF16(char* szUtf8) 
 {

@@ -154,7 +154,6 @@
   <ItemGroup>
     <ClInclude Include="MonoCollectorAPI.h" />
     <ClInclude Include="MonoCollector.h" />
-    <ClInclude Include="SEH.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

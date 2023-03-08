@@ -1,4 +1,5 @@
 ﻿#include "MonoCollector.h"
+#include <iostream>
 
 HWND StartConsole(const char* title, bool close) {
 	HANDLE g_hOutput = 0;
@@ -22,15 +23,32 @@ void Th()
 {
 	system("pause");
 
-	
-	//Untiy3D::MonoCollector* Mono = new Untiy3D::MonoCollector("mono.dll");
-	Untiy3D::MonoCollector* Mono = new Untiy3D::MonoCollector("mono-2.0-bdwgc.dll");
+	Untiy3D::MonoCollector* Mono;
+
+	if (GetModuleHandle("mono.dll"))
+	{
+		Mono = new Untiy3D::MonoCollector("mono.dll");
+	}
+	else if (GetModuleHandle("mono-2.0-bdwgc.dll"))
+	{
+		Mono = new Untiy3D::MonoCollector("mono-2.0-bdwgc.dll");
+	}
+	else if(GetModuleHandle("GameAssembly.dll"))
+	{
+		Untiy3D::MonoCollector* Mono = new Untiy3D::MonoCollector("GameAssembly.dll");
+	}
 
 	StartConsole("",true);
 
 	std::cout << "start dump ..." << std::endl;
-
-	Mono->Mono_Dump2File(".\\");
+	if (GetModuleHandle("GameAssembly.dll"))
+	{
+		Mono->il2cpp_Dump2File(".\\");
+	}
+	else
+	{
+		Mono->Mono_Dump2File(".\\");
+	}
 
 	std::cout << "dump done!" << std::endl;
 }

@@ -32,8 +32,5 @@
     <ClInclude Include="MonoCollectorAPI.h">
       <Filter>UntiyCollector</Filter>
     </ClInclude>
-    <ClInclude Include="SEH.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>
