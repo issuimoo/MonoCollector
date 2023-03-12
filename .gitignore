@@ -33,3 +33,6 @@
 .vs
 x64
 Release
+*.tlog
+*.log
+*.zip

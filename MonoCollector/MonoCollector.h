@@ -25,21 +25,21 @@ namespace Untiy3D
 		//il2cpp
 
 		//Dump
-		void il2cpp_Dump2File(std::string file);
+		void il2cpp_Dump2File					(std::string file);
 
 		//Domains (域)
-		DWORD il2cpp_EnumDomains(std::vector<Il2CppDomain*>& Domains);
+		DWORD il2cpp_EnumDomains				(std::vector<Il2CppDomain*>& Domains);
 
 		//Assembly (程序集)
-		DWORD il2cpp_EnummAssembly(std::vector<Il2CppAssembly*>& Assemblys);
+		DWORD il2cpp_EnummAssembly				(std::vector<Il2CppAssembly*>& Assemblys);
 
 		//Type (类型)
-		std::string il2cpp_GetTypeName(Il2CppType* type);
+		std::string il2cpp_GetTypeName			(Il2CppType* type);
 		
 		//Image (镜像)
-		Il2CppImage* il2cpp_GetImage	(Il2CppAssembly* Assembly);
-		std::string	 il2cpp_GetImageName(Il2CppImage* Image);
-		std::string  il2cpp_GetImageFile(Il2CppImage* Image);
+		Il2CppImage* il2cpp_GetImage			(Il2CppAssembly* Assembly);
+		std::string	 il2cpp_GetImageName		(Il2CppImage* Image);
+		std::string  il2cpp_GetImageFile		(Il2CppImage* Image);
 
 		//Class (类)
 		DWORD		il2cpp_EnumClasses			(Il2CppImage* Image, std::vector<Il2CppClass*>& Classes);
@@ -47,6 +47,7 @@ namespace Untiy3D
 		std::string il2cpp_GetClassName			(Il2CppClass* klass);
 		std::string il2cpp_GetClassNamespace	(Il2CppClass* klass);
 		DWORD		il2cpp_GetClassCount		(Il2CppImage* Image);
+		Il2CppClass*il2cpp_GetClassParent		(Il2CppClass* klass);
 
 		//Field (变量)
 		DWORD		il2cpp_EnumFields			(Il2CppClass* klass, std::vector<FieldInfo*>& Fields);
@@ -72,47 +73,48 @@ namespace Untiy3D
 		//Mono
 
 		//Dump
-		void Mono_Dump2File(std::string file);
+		void Mono_Dump2File						(std::string file);
 
 		//Domains (域)
-		DWORD Mono_EnumDomains(std::vector<MonoDomain*>& Domains);
+		DWORD Mono_EnumDomains					(std::vector<MonoDomain*>& Domains);
 
 		//Assembly (程序集)
-		DWORD Mono_EnummAssembly(std::vector<MonoAssembly*>& Assemblys);
+		DWORD Mono_EnummAssembly				(std::vector<MonoAssembly*>& Assemblys);
 
 		//Type (类型)
-		std::string Mono_GetTypeName(MonoType* type);
+		std::string Mono_GetTypeName			(MonoType* type);
 
 		//Image (镜像)
-		MonoImage*	 Mono_GetImage(MonoAssembly* Assembly);
-		std::string	 Mono_GetImageName(MonoImage* Image);
-		std::string  Mono_GetImageFile(MonoImage* Image);
+		MonoImage*	 Mono_GetImage				(MonoAssembly* Assembly);
+		std::string	 Mono_GetImageName			(MonoImage* Image);
+		std::string  Mono_GetImageFile			(MonoImage* Image);
 
 		//Class (类)
-		DWORD		Mono_EnumClasses(MonoImage* Image, std::vector<MonoClass*>& Classes);
-		MonoClass*	Mono_GetClassFromName(MonoImage* image, std::string name, std::string namespaze = "");
-		std::string Mono_GetClassName(MonoClass* klass);
-		std::string Mono_GetClassNamespace(MonoClass* klass);
-		DWORD		Mono_GetClassCount(MonoImage* Image);
+		DWORD		Mono_EnumClasses			(MonoImage* Image, std::vector<MonoClass*>& Classes);
+		MonoClass*	Mono_GetClassFromName		(MonoImage* image, std::string name, std::string namespaze = "");
+		std::string Mono_GetClassName			(MonoClass* klass);
+		std::string Mono_GetClassNamespace		(MonoClass* klass);
+		DWORD		Mono_GetClassCount			(MonoImage* Image);
+		MonoClass*	Mono_GetClassParent			(MonoClass* klass);
 
 		//Field (变量)
-		DWORD		Mono_EnumFields(MonoClass* klass, std::vector<FieldInfo*>& Fields);
-		FieldInfo*	Mono_GetFieldFromName(MonoClass* klass, std::string name);
-		DWORD_PTR   Mono_GetFieldStatic(FieldInfo* field, MonoClass* klass);
-		std::string Mono_GetFieldName(FieldInfo* field);
-		MonoType*	Mono_GetFieldType(FieldInfo* field);
-		DWORD		Mono_GetFieldOffset(FieldInfo* field);
+		DWORD		Mono_EnumFields				(MonoClass* klass, std::vector<FieldInfo*>& Fields);
+		FieldInfo*	Mono_GetFieldFromName		(MonoClass* klass, std::string name);
+		DWORD_PTR   Mono_GetFieldStatic			(FieldInfo* field, MonoClass* klass);
+		std::string Mono_GetFieldName			(FieldInfo* field);
+		MonoType*	Mono_GetFieldType			(FieldInfo* field);
+		DWORD		Mono_GetFieldOffset			(FieldInfo* field);
 
 		//Method (函数)
-		DWORD		Mono_EnumMethods(MonoClass* klass, std::vector<MethodInfo*>& Methods);
-		MethodInfo* Mono_GetMethodFromName(MonoClass* klass, std::string name, DWORD argscount = -1);
-		std::string Mono_GetMethodName(MethodInfo* Method);
-		MonoType*	Mono_GetMethodRetType(MethodInfo* Method);
-		DWORD		Mono_GetMethodParamCount(MethodInfo* Method);
-		MonoType*	Mono_GetMethodParam(MethodInfo* Method, DWORD index);
-		std::string Mono_GetMethodParamName(MethodInfo* Method, DWORD index);
-		DWORD_PTR	Mono_GetMethodAddress(MethodInfo* method);
-		DWORD_PTR	Mono_GetMethodAddress(std::string klass, std::string Method, std::string Image = "", std::string namespaze = "");
+		DWORD		Mono_EnumMethods			(MonoClass* klass, std::vector<MethodInfo*>& Methods);
+		MethodInfo* Mono_GetMethodFromName		(MonoClass* klass, std::string name, DWORD argscount = -1);
+		std::string Mono_GetMethodName			(MethodInfo* Method);
+		MonoType*	Mono_GetMethodRetType		(MethodInfo* Method);
+		DWORD		Mono_GetMethodParamCount	(MethodInfo* Method);
+		MonoType*	Mono_GetMethodParam			(MethodInfo* Method, DWORD index);
+		std::string Mono_GetMethodParamName		(MethodInfo* Method, DWORD index);
+		DWORD_PTR	Mono_GetMethodAddress		(MethodInfo* method);
+		DWORD_PTR	Mono_GetMethodAddress		(std::string klass, std::string Method, std::string Image = "", std::string namespaze = "");
 
 	private:
 		void GetFunc();

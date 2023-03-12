@@ -654,7 +654,7 @@ DO_API(char*, mono_class_name_from_token,(MonoImage* image, UINT32 token));
 DO_API(void*, mono_class_get_methods,(MonoClass* klass, void* iter));
 DO_API(MethodInfo*, mono_class_get_method_from_name,(MonoClass* klass, const char* methodname, int paramcount));
 DO_API(FieldInfo*, mono_class_get_fields,(MonoClass* klass, void* iter));
-DO_API(void*, mono_class_get_parent,(MonoClass* klass));
+DO_API(MonoClass*, mono_class_get_parent,(MonoClass* klass));
 DO_API(void*, mono_class_get_image,(MonoClass* klass));
 DO_API(void*, mono_class_vtable,(MonoDomain* domain, MonoClass* klass));
 DO_API(int, mono_class_instance_size,(MonoClass* klass));
