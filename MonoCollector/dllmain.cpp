@@ -19,21 +19,12 @@ HWND StartConsole(const char* title, bool close) {
 	return hwnd;
 }
 
-void ShowMsg() {
-	MessageBox(NULL, "DumpTools By 遂沫 (a1992724048@outlook.com)", "DumpTools By 遂沫", NULL);
-}
-
 void Th()
 {
-	CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)ShowMsg, NULL, NULL, NULL);
-	MessageBox(NULL, "进入游戏后再dump", "DumpTools By 遂沫", NULL);
 	system("pause");
 
-	StartConsole("DumpTools By 遂沫 (a1992724048@outlook.com)",true);
+	StartConsole("UntiyDump",true);
 
-	std::cout << "DumpTools By 遂沫 (a1992724048@outlook.com) \a" << std::endl;
-	std::cout << "DumpTools By 遂沫 (a1992724048@outlook.com) \a" << std::endl;
-	std::cout << "DumpTools By 遂沫 (a1992724048@outlook.com) \a" << std::endl;
 	std::cout << "start dump ..." << std::endl;
 
 	Untiy3D::MonoCollector* Mono;
@@ -55,11 +46,11 @@ void Th()
 	}
 	else
 	{
-		MessageBox(NULL, "未找到相关dll", "DumpTools By 遂沫", NULL);
+		MessageBox(NULL, "Not Find dll", "error", NULL);
 		return;
 	}
 
-	std::cout << "输出dump文件在游戏目录下 \a" << std::endl;
+	std::cout << "dump.cs in game file \a" << std::endl;
 
 	std::cout << "dump done!" << std::endl;
 }

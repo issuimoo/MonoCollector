@@ -95,10 +95,6 @@ namespace Untiy3D
 		std::stringstream str2;
 		std::stringstream str3;
 
-		str << "DumpTools By ËìÄ­ (a1992724048@outlook.com)" << std::endl;
-		str2 << "DumpTools By ËìÄ­ (a1992724048@outlook.com)" << std::endl;
-		str3 << "DumpTools By ËìÄ­ (a1992724048@outlook.com)" << std::endl;
-
 		std::vector<MonoAssembly*> Assemblys;
 		for (size_t i = 0, max = Mono_EnummAssembly(Assemblys); i < max; i++)
 		{
@@ -112,9 +108,7 @@ namespace Untiy3D
 			std::vector<MonoClass*> Classes;
 			for (size_t i_c = 0, max_c = Mono_EnumClasses(image, Classes); i_c < max_c; i_c++)
 			{
-				str << "DumpTools By ËìÄ­ (a1992724048@outlook.com)" << std::endl;
 				str << std::format("// Namespace: {}\npublic class {}\n", Mono_GetClassNamespace(Classes[i_c]), Mono_GetClassName(Classes[i_c])) << "{\n\t// Fields" << std::endl;
-				str2 << "DumpTools By ËìÄ­ (a1992724048@outlook.com)" << std::endl;
 				str2 << std::format("struct {}\n", Mono_GetClassName(Classes[i_c])) << "{" << std::endl;
 
 				std::vector<FieldInfo*> Field;
@@ -376,10 +370,6 @@ namespace Untiy3D
 		std::stringstream str2;
 		std::stringstream str3;
 
-		str << "DumpTools By ËìÄ­ (a1992724048@outlook.com)" << std::endl;
-		str2 << "DumpTools By ËìÄ­ (a1992724048@outlook.com)" << std::endl;
-		str3 << "DumpTools By ËìÄ­ (a1992724048@outlook.com)" << std::endl;
-
 		std::vector<Il2CppAssembly*> Assemblys;
 		for (size_t i = 0, max = il2cpp_EnummAssembly(Assemblys); i < max; i++)
 		{
@@ -393,9 +383,7 @@ namespace Untiy3D
 			std::vector<Il2CppClass*> Classes;
 			for (size_t i_c = 0,max_c = il2cpp_EnumClasses(image, Classes); i_c < max_c; i_c++)
 			{
-				str << "DumpTools By ËìÄ­ (a1992724048@outlook.com)" << std::endl;
 				str << std::format("// Namespace: {}\npublic class {}\n", il2cpp_GetClassNamespace(Classes[i_c]), il2cpp_GetClassName(Classes[i_c])) << "{\n\t// Fields" << std::endl;
-				str2 << "DumpTools By ËìÄ­ (a1992724048@outlook.com)" << std::endl;
 				str2 << std::format("struct {}\n", il2cpp_GetClassName(Classes[i_c])) << "{" << std::endl;
 
 				std::vector<FieldInfo*> Field;
